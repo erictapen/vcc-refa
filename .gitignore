@@ -1,3 +1,5 @@
+!assets/
 notes.md
 elm-stuff/
-index.html
+*.html
+result*

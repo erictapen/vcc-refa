@@ -12,15 +12,10 @@
 
       defaultPackage.x86_64-linux = self.packages.x86_64-linux.webapp;
 
-      packages.x86_64-linux.webapp = let
-        webapp = import ./default.nix {
-            inherit nixpkgs config;
-            revision = self.rev or "dirty";
-          };
-       in pkgs.runCommand "refa" { } ''
-         mkdir -p $out/refa
-         ln -s ${webapp} $out/refa
-       '';
+      packages.x86_64-linux.webapp = import ./default.nix {
+        inherit nixpkgs config;
+        revision = self.rev or "dirty";
+      };
 
       nixosModule = import ./module.nix self.packages.x86_64-linux.webapp;
 
