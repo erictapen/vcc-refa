@@ -1,7 +1,8 @@
-module OmekaS exposing (Item, fetchItem)
+module OmekaS exposing (OItem(..), fetchItemById, oItemDecoder)
 
 import Http
-import Json.Decode as JD exposing (at, field, int, maybe, string)
+import Json.Decode as JD exposing (andThen, at, field, int, list, maybe, string, succeed)
+import List exposing (member)
 import String exposing (fromInt)
 
 
@@ -9,21 +10,61 @@ baseUrl =
     "https://uclab.fh-potsdam.de/refa/api"
 
 
-type alias Item =
-    { id : Int
-    , thumbnailUrl : Maybe String
-    }
+type OItem
+    = E24Hmo
+        { id : Int
+        , thumbnailUrl : Maybe String
+        , p67refersTo : List Int
+        }
+    | E55Type { label : String }
+    | UnknownOItem
 
 
-fetchItem msgConstructor id =
+fetchItemById msgConstructor id =
     Http.get
         { url = baseUrl ++ "/items/" ++ fromInt id
-        , expect = Http.expectJson msgConstructor itemDecoder
+        , expect = Http.expectJson msgConstructor oItemDecoder
         }
 
 
-itemDecoder : JD.Decoder Item
-itemDecoder =
-    JD.map2 Item
-        (field "o:id" int)
-        (maybe (at [ "thumbnail_display_urls", "medium" ] string))
+oItemDecoder : JD.Decoder OItem
+oItemDecoder =
+    let
+        chooseOItemVariant types =
+            if member "ecrm:E22_Human-Made_Object" types then
+                e24HmoDecoder
+
+            else if member "ecrm:E55_Type" types then
+                e55TypeDecoder
+
+            else
+                succeed UnknownOItem
+    in
+    field "@type" (list string)
+        |> andThen chooseOItemVariant
+
+
+e24Hmo id thumbnailUrl p67refersTo =
+    { id = id
+    , thumbnailUrl = thumbnailUrl
+    , p67refersTo = p67refersTo
+    }
+
+
+e24HmoDecoder : JD.Decoder OItem
+e24HmoDecoder =
+    JD.map E24Hmo <|
+        JD.map3 e24Hmo
+            (field "o:id" int)
+            (maybe (at [ "thumbnail_display_urls", "medium" ] string))
+            (JD.map (List.filterMap identity) (field "ecrm:P67_refers_to" (list oResourceDecoder)))
+
+
+e55TypeDecoder : JD.Decoder OItem
+e55TypeDecoder =
+    JD.map (\l -> E55Type { label = l }) (field "o:title" string)
+
+
+oResourceDecoder : JD.Decoder (Maybe Int)
+oResourceDecoder =
+    maybe (field "value_resource_id" int)

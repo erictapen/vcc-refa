@@ -22,15 +22,15 @@ main =
         }
 
 
-init : () -> Url.Url -> Browser.Navigation.Key -> ( Result String O.Item, Cmd.Cmd Msg )
+init : () -> Url.Url -> Browser.Navigation.Key -> ( Result String O.OItem, Cmd.Cmd Msg )
 init _ url key =
-    ( Err "Das Bild wird noch geladen.", fetchItem GotItem 48 )
+    ( Err "Das Bild wird noch geladen.", fetchItemById GotItem 127 )
 
 
 type Msg
     = OnUrlChange Url.Url
     | OnUrlRequest Browser.UrlRequest
-    | GotItem (Result Http.Error O.Item)
+    | GotItem (Result Http.Error O.OItem)
 
 
 subscriptions model =
@@ -41,8 +41,11 @@ update msg model =
     case msg of
         GotItem itemResult ->
             case itemResult of
+                Err (Http.BadBody str) ->
+                    ( Err str, Cmd.none )
+
                 Err _ ->
-                    ( Err "Das Bild konnte nicht geladen werden.", Cmd.none )
+                    ( Err "something went wrong", Cmd.none )
 
                 Ok item ->
                     ( Ok item, Cmd.none )
@@ -64,13 +67,16 @@ view model =
                     Err err ->
                         text err
 
-                    Ok item ->
-                        case item.thumbnailUrl of
+                    Ok (E24Hmo itemData) ->
+                        case itemData.thumbnailUrl of
                             Nothing ->
                                 text "Kein Thumbnail!"
 
                             Just thumbnailUrl ->
                                 img [ src thumbnailUrl ] []
+
+                    _ ->
+                        text "?"
                 ]
             ]
         ]
