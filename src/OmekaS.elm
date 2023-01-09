@@ -1,4 +1,10 @@
-module OmekaS exposing (HMO(..), Type(..), e24HmoDecoder, fetchHmoById)
+module OmekaS exposing
+    ( HMO(..)
+    , Type(..)
+    , e24HmoDecoder
+    , fetchHmoById
+    , fetchTypeById
+    )
 
 import Http
 import Json.Decode as JD exposing (andThen, at, fail, field, int, list, maybe, string, succeed)
@@ -8,7 +14,6 @@ import String exposing (fromInt)
 
 baseUrl =
     "https://uclab.fh-potsdam.de/refa/api"
-
 
 
 {-| E24 Human made object
@@ -21,7 +26,6 @@ type HMO
         }
 
 
-
 {-| E55 Type
 -}
 type Type
@@ -32,6 +36,10 @@ type Type
 
 fetchHmoById =
     fetchOItemById e24HmoDecoder
+
+
+fetchTypeById =
+    fetchOItemById e55TypeDecoder
 
 
 fetchOItemById decoder msgConstructor id =

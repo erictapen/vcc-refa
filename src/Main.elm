@@ -6,6 +6,7 @@ import Dict exposing (Dict)
 import Html exposing (div, img, text)
 import Html.Attributes exposing (src, style)
 import Http
+import List exposing (map)
 import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
@@ -45,6 +46,7 @@ type Msg
     = OnUrlChange Url.Url
     | OnUrlRequest Browser.UrlRequest
     | GotHMO (Result Http.Error HMO)
+    | GotType Int (Result Http.Error Type)
 
 
 subscriptions model =
@@ -53,16 +55,32 @@ subscriptions model =
 
 update msg model =
     case msg of
-        GotHMO itemResult ->
-            case itemResult of
+        GotHMO hmoResult ->
+            case hmoResult of
                 Err (Http.BadBody str) ->
                     ( { model | painting = Err str }, Cmd.none )
 
                 Err _ ->
                     ( { model | painting = Err "something went wrong" }, Cmd.none )
 
-                Ok item ->
-                    ( { model | painting = Ok item }, Cmd.none )
+                Ok (HMO hmoRecord) ->
+                    ( { model | painting = Ok (HMO hmoRecord) }
+                    , Cmd.batch <|
+                        map (\id -> fetchTypeById (GotType id) id) hmoRecord.p67refersTo
+                    )
+
+        GotType typeId typeResult ->
+            case typeResult of
+                Err (Http.BadBody str) ->
+                    ( { model | painting = Err str }, Cmd.none )
+
+                Err _ ->
+                    ( { model | painting = Err "something went wrong" }, Cmd.none )
+
+                Ok t ->
+                    ( { model | typesCache = Dict.insert typeId t model.typesCache }
+                    , Cmd.none
+                    )
 
         _ ->
             ( model, Cmd.none )
@@ -81,8 +99,8 @@ view model =
                     Err err ->
                         text err
 
-                    Ok (HMO itemData) ->
-                        case itemData.thumbnailUrl of
+                    Ok (HMO hmoData) ->
+                        case hmoData.thumbnailUrl of
                             Nothing ->
                                 text "Kein Thumbnail!"
 
