@@ -24,8 +24,8 @@ main =
 
 
 type alias Model =
-    { painting : Result String O.OItem
-    , typesCache : Dict Int OItem
+    { painting : Result String O.HMO
+    , typesCache : Dict Int Type
     }
 
 
@@ -38,13 +38,13 @@ initialModel =
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd.Cmd Msg )
 init _ url key =
-    ( initialModel, fetchItemById GotItem 127 )
+    ( initialModel, fetchHmoById GotHMO 127 )
 
 
 type Msg
     = OnUrlChange Url.Url
     | OnUrlRequest Browser.UrlRequest
-    | GotItem (Result Http.Error O.OItem)
+    | GotHMO (Result Http.Error HMO)
 
 
 subscriptions model =
@@ -53,7 +53,7 @@ subscriptions model =
 
 update msg model =
     case msg of
-        GotItem itemResult ->
+        GotHMO itemResult ->
             case itemResult of
                 Err (Http.BadBody str) ->
                     ( { model | painting = Err str }, Cmd.none )
@@ -81,16 +81,13 @@ view model =
                     Err err ->
                         text err
 
-                    Ok (E24Hmo itemData) ->
+                    Ok (HMO itemData) ->
                         case itemData.thumbnailUrl of
                             Nothing ->
                                 text "Kein Thumbnail!"
 
                             Just thumbnailUrl ->
                                 img [ src thumbnailUrl ] []
-
-                    _ ->
-                        text "?"
                 ]
             ]
         ]
