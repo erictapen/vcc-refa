@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation
+import Dict exposing (Dict)
 import Html exposing (div, img, text)
 import Html.Attributes exposing (src, style)
 import Http
@@ -22,9 +23,22 @@ main =
         }
 
 
-init : () -> Url.Url -> Browser.Navigation.Key -> ( Result String O.OItem, Cmd.Cmd Msg )
+type alias Model =
+    { painting : Result String O.OItem
+    , typesCache : Dict Int OItem
+    }
+
+
+initialModel : Model
+initialModel =
+    { painting = Err "Das Bild wird noch geladen."
+    , typesCache = Dict.empty
+    }
+
+
+init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd.Cmd Msg )
 init _ url key =
-    ( Err "Das Bild wird noch geladen.", fetchItemById GotItem 127 )
+    ( initialModel, fetchItemById GotItem 127 )
 
 
 type Msg
@@ -42,13 +56,13 @@ update msg model =
         GotItem itemResult ->
             case itemResult of
                 Err (Http.BadBody str) ->
-                    ( Err str, Cmd.none )
+                    ( { model | painting = Err str }, Cmd.none )
 
                 Err _ ->
-                    ( Err "something went wrong", Cmd.none )
+                    ( { model | painting = Err "something went wrong" }, Cmd.none )
 
                 Ok item ->
-                    ( Ok item, Cmd.none )
+                    ( { model | painting = Ok item }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -63,7 +77,7 @@ view model =
                 ]
                 [ text "Hello world 💃" ]
             , div []
-                [ case model of
+                [ case model.painting of
                     Err err ->
                         text err
 
