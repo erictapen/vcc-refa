@@ -3,13 +3,14 @@ module Main exposing (..)
 import Browser
 import Browser.Navigation
 import Dict exposing (Dict)
-import Html exposing (div, img, text)
+import Html exposing (Html, div, img, li, text, ul)
 import Html.Attributes exposing (src, style)
 import Http
 import List exposing (map)
 import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
+import String exposing (fromInt)
 import Url
 
 
@@ -86,6 +87,18 @@ update msg model =
             ( model, Cmd.none )
 
 
+tagListItem : Dict Int Type -> Int -> Html Msg
+tagListItem typesCache typesId =
+    li []
+        [ case Dict.get typesId typesCache of
+            Nothing ->
+                text "Loading..."
+
+            Just (Type t) ->
+                text <| fromInt typesId ++ ": " ++ t.label
+        ]
+
+
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
@@ -105,7 +118,10 @@ view model =
                                 text "Kein Thumbnail!"
 
                             Just thumbnailUrl ->
-                                img [ src thumbnailUrl ] []
+                                div []
+                                    [ img [ src thumbnailUrl ] []
+                                    , ul [] <| map (tagListItem model.typesCache) hmoData.p67refersTo
+                                    ]
                 ]
             ]
         ]

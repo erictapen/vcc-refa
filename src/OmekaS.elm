@@ -86,9 +86,61 @@ e24HmoDecoder =
 e55TypeDecoder : JD.Decoder Type
 e55TypeDecoder =
     checkForCorrectType "ecrm:E55_Type" <|
-        JD.map (\l -> Type { label = l }) (field "o:title" string)
+        JD.map (\l -> Type { label = l }) prefLabelDecoder
 
 
 oResourceDecoder : JD.Decoder (Maybe Int)
 oResourceDecoder =
     maybe <| field "value_resource_id" int
+
+
+type alias PrefLabel =
+    { language : String
+    , value : String
+    }
+
+
+prefLabelDecoder : JD.Decoder String
+prefLabelDecoder =
+    field "skos:prefLabel"
+        (JD.map
+            (List.filterMap identity)
+            (list prefLabelDecoder2)
+        )
+        |> andThen selectPreflabel
+
+
+selectPreflabel : List PrefLabel -> JD.Decoder String
+selectPreflabel prefLabels =
+    case prefLabels of
+        [] ->
+            fail "No prefLabel"
+
+        prefLabel :: ps ->
+            if prefLabel.language == "en" then
+                succeed prefLabel.value
+
+            else
+                selectPreflabel ps
+
+
+prefLabelDecoder2 : JD.Decoder (Maybe PrefLabel)
+prefLabelDecoder2 =
+    JD.map2
+        (\lang value ->
+            case ( lang, value ) of
+                ( Just l, Just v ) ->
+                    Just { language = l, value = v }
+
+                _ ->
+                    Nothing
+        )
+        (maybe (field "@language" string))
+        (maybe (field "@value" (JD.map unescapeUtf8EscapeSequence string)))
+
+
+{-| Apparently there is no standard library for this yet?
+-}
+unescapeUtf8EscapeSequence : String -> String
+unescapeUtf8EscapeSequence =
+    String.replace "\\u00e9" "é"
