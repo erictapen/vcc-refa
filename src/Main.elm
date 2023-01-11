@@ -3,8 +3,8 @@ module Main exposing (..)
 import Browser
 import Browser.Navigation
 import Dict exposing (Dict)
-import Html exposing (Html, div, img, li, text, ul)
-import Html.Attributes exposing (src, style)
+import Html exposing (Html, a, div, img, li, p, text, ul)
+import Html.Attributes exposing (href, src, style)
 import Http
 import List exposing (map)
 import OmekaS as O exposing (..)
@@ -13,6 +13,10 @@ import Platform.Sub
 import String exposing (fromInt)
 import Url
 import Url.Parser as UP exposing ((</>))
+
+
+refaBaseUrl =
+    "https://uclab.fh-potsdam.de/refa/admin/item/"
 
 
 main =
@@ -63,7 +67,7 @@ init _ url key =
     ( model
     , Cmd.batch
         [ fetchHmoById GotHMO model.paintingId
-        , Browser.Navigation.pushUrl key (String.fromInt model.paintingId)
+        , Browser.Navigation.pushUrl key (fromInt model.paintingId)
         ]
     )
 
@@ -120,7 +124,7 @@ tagListItem typesCache typesId =
                 text "Loading..."
 
             Just (Type t) ->
-                text <| fromInt typesId ++ ": " ++ t.label
+                a [ href <| refaBaseUrl ++ fromInt typesId ] [ text t.label ]
         ]
 
 
@@ -145,6 +149,10 @@ view model =
                             Just thumbnailUrl ->
                                 div []
                                     [ img [ src thumbnailUrl ] []
+                                    , p []
+                                        [ a [ href <| refaBaseUrl ++ fromInt model.paintingId ]
+                                            [ text "Link to the ReFa web interface" ]
+                                        ]
                                     , ul [] <| map (tagListItem model.typesCache) hmoData.p67refersTo
                                     ]
                 ]
