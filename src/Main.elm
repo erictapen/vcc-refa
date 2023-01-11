@@ -12,6 +12,7 @@ import Platform.Cmd
 import Platform.Sub
 import String exposing (fromInt)
 import Url
+import Url.Parser as UP exposing ((</>))
 
 
 main =
@@ -26,21 +27,45 @@ main =
 
 
 type alias Model =
-    { painting : Result String O.HMO
+    { paintingId : Int
+    , painting : Result String O.HMO
     , typesCache : Dict Int Type
     }
 
 
 initialModel : Model
 initialModel =
-    { painting = Err "Das Bild wird noch geladen."
+    { paintingId = 127
+    , painting = Err "Das Bild wird noch geladen."
     , typesCache = Dict.empty
     }
 
 
+paintingIdParser : UP.Parser (Int -> a) a
+paintingIdParser =
+    UP.oneOf
+        [ UP.int
+        , UP.s "refa" </> UP.int
+        ]
+
+
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd.Cmd Msg )
 init _ url key =
-    ( initialModel, fetchHmoById GotHMO 127 )
+    let
+        model =
+            case UP.parse paintingIdParser url of
+                Just id ->
+                    { initialModel | paintingId = id }
+
+                Nothing ->
+                    initialModel
+    in
+    ( model
+    , Cmd.batch
+        [ fetchHmoById GotHMO model.paintingId
+        , Browser.Navigation.pushUrl key (String.fromInt model.paintingId)
+        ]
+    )
 
 
 type Msg
