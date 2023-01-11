@@ -127,14 +127,7 @@ selectPreflabel prefLabels =
 prefLabelDecoder2 : JD.Decoder (Maybe PrefLabel)
 prefLabelDecoder2 =
     JD.map2
-        (\lang value ->
-            case ( lang, value ) of
-                ( Just l, Just v ) ->
-                    Just { language = l, value = v }
-
-                _ ->
-                    Nothing
-        )
+        (Maybe.map2 PrefLabel)
         (maybe (field "@language" string))
         (maybe (field "@value" (JD.map unescapeUtf8EscapeSequence string)))
 
