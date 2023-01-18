@@ -167,7 +167,11 @@ view model =
                 ]
                 [ text "Hello world 💃" ]
             , div []
-                [ case model.painting of
+                [ p []
+                    [ a [ href <| refaBaseUrl ++ fromInt model.paintingId ]
+                        [ text "Link to the ReFa web interface" ]
+                    ]
+                , case model.painting of
                     Err err ->
                         text err
 
@@ -179,10 +183,6 @@ view model =
                             Just thumbnailUrl ->
                                 div []
                                     [ img [ src thumbnailUrl ] []
-                                    , p []
-                                        [ a [ href <| refaBaseUrl ++ fromInt model.paintingId ]
-                                            [ text "Link to the ReFa web interface" ]
-                                        ]
                                     , ul [] <| map (tagListItem model.typesCache) hmoData.p67refersTo
                                     ]
                 ]
