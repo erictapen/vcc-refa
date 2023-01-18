@@ -31,6 +31,7 @@ type HMO
 type Type
     = Type
         { label : String
+        , reverseP67 : List ( Int, String )
         }
 
 
@@ -86,7 +87,9 @@ e24HmoDecoder =
 e55TypeDecoder : JD.Decoder Type
 e55TypeDecoder =
     checkForCorrectType "ecrm:E55_Type" <|
-        JD.map (\l -> Type { label = l }) prefLabelDecoder
+        JD.map2 (\l r -> Type { label = l, reverseP67 = r })
+            prefLabelDecoder
+            reverseP67Decoder
 
 
 oResourceDecoder : JD.Decoder (Maybe Int)
@@ -137,3 +140,24 @@ prefLabelDecoder2 =
 unescapeUtf8EscapeSequence : String -> String
 unescapeUtf8EscapeSequence =
     String.replace "\\u00e9" "é"
+
+
+reverseP67Decoder : JD.Decoder (List ( Int, String ))
+reverseP67Decoder =
+    JD.map (Maybe.withDefault []) (maybe (at [ "@reverse", "ecrm:P67_refers_to" ] (list p67Entry)))
+
+
+p67Entry : JD.Decoder ( Int, String )
+p67Entry =
+    JD.map2 Tuple.pair
+        (JD.map (Maybe.withDefault 0) <| field "@id" (JD.map extractItemIdFromResourceUrl string))
+        (field "o:title" string)
+
+
+extractItemIdFromResourceUrl : String -> Maybe Int
+extractItemIdFromResourceUrl url =
+    if String.startsWith "https://uclab.fh-potsdam.de/refa/api/resources/" url then
+        String.toInt <| String.dropLeft 47 url
+
+    else
+        Nothing

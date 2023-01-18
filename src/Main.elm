@@ -3,7 +3,7 @@ module Main exposing (..)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
 import Dict exposing (Dict)
-import Html exposing (Html, a, div, img, li, p, text, ul)
+import Html exposing (Html, a, details, div, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (href, src, style)
 import Http
 import List exposing (map)
@@ -114,10 +114,21 @@ update msg model =
         UrlChange urlRequest ->
             case urlRequest of
                 Internal url ->
-                    -- For now we don't do anything when the Url is local
-                    ( model
-                    , Cmd.none
-                    )
+                    case UP.parse paintingIdParser url of
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                        Just id ->
+                            if id == model.paintingId then
+                                ( model, Cmd.none )
+
+                            else
+                                ( { model | paintingId = id }
+                                , Cmd.batch
+                                    [ Browser.Navigation.pushUrl model.key (Url.toString url)
+                                    , fetchHmoById GotHMO id
+                                    ]
+                                )
 
                 External url ->
                     ( model
@@ -125,16 +136,26 @@ update msg model =
                     )
 
 
+pictureItem : ( Int, String ) -> Html Msg
+pictureItem ( id, name ) =
+    li [] [ a [ href <| fromInt id ] [ text name ] ]
+
+
 tagListItem : Dict Int Type -> Int -> Html Msg
 tagListItem typesCache typesId =
-    li []
-        [ case Dict.get typesId typesCache of
+    li [] <|
+        case Dict.get typesId typesCache of
             Nothing ->
-                text "Loading..."
+                [ text "Loading..." ]
 
             Just (Type t) ->
-                a [ href <| refaBaseUrl ++ fromInt typesId ] [ text t.label ]
-        ]
+                [ details []
+                    [ summary []
+                        [ a [ href <| refaBaseUrl ++ fromInt typesId ] [ text t.label ]
+                        ]
+                    , span [] [ ul [] <| map pictureItem t.reverseP67 ]
+                    ]
+                ]
 
 
 view model =
