@@ -3,3 +3,4 @@ notes.md
 elm-stuff/
 *.html
 result*
+.nginx/

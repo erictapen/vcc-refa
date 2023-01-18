@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Browser
+import Browser exposing (UrlRequest(..))
 import Browser.Navigation
 import Dict exposing (Dict)
 import Html exposing (Html, a, div, img, li, p, text, ul)
@@ -25,23 +25,16 @@ main =
         , view = view
         , update = update
         , subscriptions = subscriptions
-        , onUrlRequest = OnUrlRequest
-        , onUrlChange = OnUrlChange
+        , onUrlRequest = UrlChange
+        , onUrlChange = UrlChange << Browser.Internal
         }
 
 
 type alias Model =
-    { paintingId : Int
+    { key : Browser.Navigation.Key
+    , paintingId : Int
     , painting : Result String O.HMO
     , typesCache : Dict Int Type
-    }
-
-
-initialModel : Model
-initialModel =
-    { paintingId = 127
-    , painting = Err "Das Bild wird noch geladen."
-    , typesCache = Dict.empty
     }
 
 
@@ -56,6 +49,13 @@ paintingIdParser =
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd.Cmd Msg )
 init _ url key =
     let
+        initialModel =
+            { key = key
+            , paintingId = 127
+            , painting = Err "Das Bild wird noch geladen."
+            , typesCache = Dict.empty
+            }
+
         model =
             case UP.parse paintingIdParser url of
                 Just id ->
@@ -73,8 +73,7 @@ init _ url key =
 
 
 type Msg
-    = OnUrlChange Url.Url
-    | OnUrlRequest Browser.UrlRequest
+    = UrlChange UrlRequest
     | GotHMO (Result Http.Error HMO)
     | GotType Int (Result Http.Error Type)
 
@@ -112,8 +111,18 @@ update msg model =
                     , Cmd.none
                     )
 
-        _ ->
-            ( model, Cmd.none )
+        UrlChange urlRequest ->
+            case urlRequest of
+                Internal url ->
+                    -- For now we don't do anything when the Url is local
+                    ( model
+                    , Cmd.none
+                    )
+
+                External url ->
+                    ( model
+                    , Browser.Navigation.load url
+                    )
 
 
 tagListItem : Dict Int Type -> Int -> Html Msg

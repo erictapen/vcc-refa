@@ -34,6 +34,7 @@
               applytransforms
             ];
           })
+          (import ./nginx.nix pkgs)
         ];
       };
 
