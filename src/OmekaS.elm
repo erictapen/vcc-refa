@@ -46,7 +46,7 @@ fetchTypeById =
 fetchOItemById decoder msgConstructor id =
     Http.get
         { url = baseUrl ++ "/items/" ++ fromInt id
-        , expect = Http.expectJson msgConstructor decoder
+        , expect = Http.expectJson (msgConstructor id) decoder
         }
 
 
