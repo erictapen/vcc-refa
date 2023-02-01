@@ -3,7 +3,7 @@ module Main exposing (..)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
 import Dict exposing (Dict)
-import Html exposing (Html, a, details, div, img, li, p, span, summary, text, ul)
+import Html exposing (Html, a, details, div, h1, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (href, src, style)
 import Http
 import List exposing (map)
@@ -11,6 +11,7 @@ import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
 import String exposing (fromInt)
+import Types
 import Url
 import Url.Parser as UP exposing ((</>))
 
@@ -178,6 +179,8 @@ pictureItem ( id, name ) =
     li [] [ a [ href <| fromInt id ] [ text name ] ]
 
 
+{-| This list of tags is currently only shown for developing purposes. Eventually we are going to show only one tag.
+-}
 tagListItem : Dict Int Type -> Int -> Html Msg
 tagListItem typesCache typesId =
     li [] <|
@@ -187,9 +190,24 @@ tagListItem typesCache typesId =
 
             Just (Type t) ->
                 [ details []
-                    [ summary []
-                        [ a [ href <| refaBaseUrl ++ fromInt typesId ] [ text t.label ]
-                        ]
+                    [ let
+                        refaUrl =
+                            refaBaseUrl ++ fromInt typesId
+                      in
+                      summary []
+                        (Maybe.withDefault
+                            [ text <| fromInt typesId ++ ": "
+                            , a [ href <| refaUrl ] [ text t.label ]
+                            ]
+                         <|
+                            Maybe.map
+                                (\( fType, label ) ->
+                                    [ span [ style "font-weight" "bold" ] [ text <| Types.toString fType ++ ": " ]
+                                    , a [ href <| refaUrl ] [ text label ]
+                                    ]
+                                )
+                                (Dict.get typesId Types.filterTypes)
+                        )
                     , span [] [ ul [] <| map pictureItem t.reverseP67 ]
                     ]
                 ]
@@ -197,19 +215,13 @@ tagListItem typesCache typesId =
 
 artwalkView =
     div []
-        [ div
-            [ style "font-weight" "bold"
-            ]
-            [ text "Artwalk view" ]
+        [ h1 [] [ text "Artwalk view" ]
         ]
 
 
 relationalView typesCache hmoCache paintingId =
     div []
-        [ div
-            [ style "font-weight" "bold"
-            ]
-            [ text "Relational view" ]
+        [ h1 [] [ text "Relational view" ]
         , div []
             [ p []
                 [ a [ href <| refaBaseUrl ++ fromInt paintingId ]
