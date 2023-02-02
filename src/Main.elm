@@ -13,6 +13,7 @@ import Platform.Sub
 import String exposing (fromInt)
 import Types
 import Url
+import Url.Builder as UB
 import Url.Parser as UP exposing ((</>), (<?>))
 import Url.Parser.Query as UQ
 
@@ -130,6 +131,25 @@ subscriptions model =
     Sub.none
 
 
+buildUrl : ArtwalkMode -> Filters -> String
+buildUrl mode filters =
+    UB.absolute
+        (case mode of
+            Relational r ->
+                [ fromInt r.paintingId ]
+
+            _ ->
+                []
+        )
+    <|
+        List.filterMap identity
+            [ Maybe.map (UB.int "head") filters.head
+            , Maybe.map (UB.int "upperBody") filters.upperBody
+            , Maybe.map (UB.int "lowerBody") filters.lowerBody
+            , Maybe.map (UB.int "accessories") filters.accessories
+            ]
+
+
 update : Msg -> Model -> ( Model, Platform.Cmd.Cmd Msg )
 update msg model =
     case msg of
@@ -172,9 +192,15 @@ update msg model =
                                 ( model, Cmd.none )
 
                             else
-                                ( { model | mode = Relational rUrl }
+                                let
+                                    newModel =
+                                        { model | mode = Relational rUrl }
+                                in
+                                ( newModel
                                 , Cmd.batch
-                                    [ Browser.Navigation.pushUrl model.navigationKey (Url.toString url)
+                                    [ -- An internal request doesn't automatically pushUrl, so we have to do it by hand.
+                                      Browser.Navigation.pushUrl model.navigationKey <|
+                                        buildUrl newModel.mode newModel.filters
 
                                     -- TODO check wether we have it in cache before making the request
                                     , fetchHmoById GotHMO rUrl.paintingId
