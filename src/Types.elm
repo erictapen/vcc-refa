@@ -31,4 +31,7 @@ filterTypes =
     Dict.fromList
         [ ( 10217, ( Accessories, "Necklace" ) )
         , ( 10300, ( Accessories, "Flowers" ) )
+        , ( 10266, ( Accessories, "Fan" ) )
+        , ( 10293, ( Head, "Wig (Woman)" ) )
+        , ( 10200, ( UpperBody, "Dress" ) )
         ]
