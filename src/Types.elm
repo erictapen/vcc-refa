@@ -1,4 +1,4 @@
-module Types exposing (filterTypes, toString)
+module Types exposing (FilterType(..), filterTypes, toString)
 
 import Dict exposing (Dict)
 

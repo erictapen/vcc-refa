@@ -13,7 +13,8 @@ import Platform.Sub
 import String exposing (fromInt)
 import Types
 import Url
-import Url.Parser as UP exposing ((</>))
+import Url.Parser as UP exposing ((</>), (<?>))
+import Url.Parser.Query as UQ
 
 
 refaBaseUrl =
@@ -33,6 +34,7 @@ main =
 
 type alias Model =
     { mode : ArtwalkMode
+    , filters : Filters
     , navigationKey : Browser.Navigation.Key
     , typesCache : Dict Int Type
     , hmoCache : Dict Int (Result String HMO)
@@ -41,20 +43,45 @@ type alias Model =
 
 type ArtwalkMode
     = Artwalk
-        { paintings : List Int
+        { position : Int
         }
     | Relational
         { paintingId : Int
         }
 
 
-paintingIdParser : UP.Parser (ArtwalkMode -> a) a
-paintingIdParser =
+type alias Filters =
+    { head : Maybe Int
+    , upperBody : Maybe Int
+    , lowerBody : Maybe Int
+    , accessories : Maybe Int
+    }
+
+
+emptyFilters =
+    { head = Nothing
+    , upperBody = Nothing
+    , lowerBody = Nothing
+    , accessories = Nothing
+    }
+
+
+queryParser : UQ.Parser Filters
+queryParser =
+    UQ.map4 Filters
+        (UQ.int "head")
+        (UQ.int "upperBody")
+        (UQ.int "lowerBody")
+        (UQ.int "accessories")
+
+
+urlParser : UP.Parser (( ArtwalkMode, Filters ) -> a) a
+urlParser =
     let
         refaUrl =
             UP.oneOf
-                [ UP.map (\i -> Relational { paintingId = i }) UP.int
-                , UP.map (Artwalk { paintings = [ 127 ] }) UP.top
+                [ UP.map (\i f -> ( Relational { paintingId = i }, f )) (UP.int <?> queryParser)
+                , UP.map (\f -> ( Artwalk { position = 0 }, f )) (UP.top <?> queryParser)
                 ]
     in
     -- We allow "refa/" in front of the actual url, for easier hosting atm
@@ -69,15 +96,16 @@ init _ url key =
     let
         initialModel =
             { navigationKey = key
-            , mode = Artwalk { paintings = [ 127 ] }
+            , filters = emptyFilters
+            , mode = Artwalk { position = 0 }
             , typesCache = Dict.empty
             , hmoCache = Dict.empty
             }
 
         model =
-            case UP.parse paintingIdParser url of
-                Just mode ->
-                    { initialModel | mode = mode }
+            case UP.parse urlParser url of
+                Just ( mode, filters ) ->
+                    { initialModel | mode = mode, filters = filters }
 
                 Nothing ->
                     initialModel
@@ -85,10 +113,7 @@ init _ url key =
     ( model
     , case model.mode of
         Relational r ->
-            Cmd.batch
-                [ fetchHmoById GotHMO r.paintingId
-                , Browser.Navigation.pushUrl key (fromInt r.paintingId)
-                ]
+            fetchHmoById GotHMO r.paintingId
 
         _ ->
             Cmd.none
@@ -141,8 +166,8 @@ update msg model =
         UrlChange urlRequest ->
             case urlRequest of
                 Internal url ->
-                    case ( UP.parse paintingIdParser url, model.mode ) of
-                        ( Just (Relational rUrl), Relational rModel ) ->
+                    case ( UP.parse urlParser url, model.mode ) of
+                        ( Just ( Relational rUrl, _ ), Relational rModel ) ->
                             if rUrl.paintingId == rModel.paintingId then
                                 ( model, Cmd.none )
 
@@ -156,13 +181,9 @@ update msg model =
                                     ]
                                 )
 
-                        ( Just (Artwalk aUrl), Artwalk aModel ) ->
+                        ( Just ( Artwalk aUrl, _ ), Artwalk aModel ) ->
                             ( { model | mode = Artwalk aUrl }
-                            , Cmd.batch
-                                [ -- TODO check wether we have it in cache before making the request
-                                  Cmd.batch <|
-                                    map (\id -> fetchHmoById GotHMO id) aUrl.paintings
-                                ]
+                            , Cmd.none
                             )
 
                         _ ->
@@ -248,10 +269,50 @@ relationalView typesCache hmoCache paintingId =
         ]
 
 
+{-| An individual filter widget, somewhat like a drop-down menu.
+-}
+filterWidget : Types.FilterType -> Maybe Int -> Html Msg
+filterWidget filterType typeId =
+    div [ style "width" "20%" ]
+        [ span [ style "font-weight" "bold" ] [ text <| Types.toString filterType ++ ": " ]
+        , text <|
+            case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypes) typeId ) of
+                ( Nothing, _ ) ->
+                    "None selected"
+
+                ( Just t, Nothing ) ->
+                    "Type " ++ fromInt t ++ " is not registered"
+
+                ( Just t, Just ( registeredFilterType, humanReadableLabel ) ) ->
+                    if registeredFilterType == filterType then
+                        humanReadableLabel
+
+                    else
+                        "Invalid type id for category " ++ fromInt t ++ ", is " ++ Types.toString registeredFilterType ++ "."
+        ]
+
+
+{-| The filter bar displayed ontop of the site, that lets users select their
+filters for each of the four filter categories.
+-}
+filterBar : Filters -> Html Msg
+filterBar filters =
+    div
+        [ style "display" "flex"
+        , style "flex-direction" "row"
+        ]
+        [ filterWidget Types.Head filters.head
+        , filterWidget Types.UpperBody filters.upperBody
+        , filterWidget Types.LowerBody filters.lowerBody
+        , filterWidget Types.Accessories filters.accessories
+        ]
+
+
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
-        [ case model.mode of
+        [ filterBar model.filters
+        , case model.mode of
             Artwalk _ ->
                 artwalkView
 
