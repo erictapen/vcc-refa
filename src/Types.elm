@@ -1,4 +1,4 @@
-module Types exposing (FilterType(..), filterTypes, toString)
+module Types exposing (FilterType(..), filterTypes, toIdentifier, toString)
 
 import Dict exposing (Dict)
 
@@ -24,6 +24,24 @@ toString ft =
 
         Accessories ->
             "Accessories"
+
+
+{-| This has to produce unique strings!
+-}
+toIdentifier : FilterType -> String
+toIdentifier ft =
+    case ft of
+        Head ->
+            "FilterHead"
+
+        UpperBody ->
+            "FilterUpperbody"
+
+        LowerBody ->
+            "FilterLowerbody"
+
+        Accessories ->
+            "FilterAccessories"
 
 
 filterTypes : Dict Int ( FilterType, String )

@@ -10,6 +10,7 @@ import List exposing (map)
 import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
+import Select
 import String exposing (fromInt)
 import Types
 import Url
@@ -33,12 +34,20 @@ main =
         }
 
 
+type alias SelectElement =
+    { selectState : Select.State
+    , items : List (Select.MenuItem Int)
+    , selectedItem : Maybe Int
+    }
+
+
 type alias Model =
     { mode : ArtwalkMode
     , filters : Filters
     , navigationKey : Browser.Navigation.Key
     , typesCache : Dict Int Type
     , hmoCache : Dict Int (Result String HMO)
+    , selects : Dict String SelectElement
     }
 
 
@@ -101,6 +110,14 @@ init _ url key =
             , mode = Artwalk { position = 0 }
             , typesCache = Dict.empty
             , hmoCache = Dict.empty
+            , selects =
+                Dict.fromList <|
+                    map (\ft -> ( Types.toIdentifier ft, emptySelect ft ))
+                        [ Types.Head
+                        , Types.UpperBody
+                        , Types.LowerBody
+                        , Types.Accessories
+                        ]
             }
 
         model =
@@ -116,10 +133,18 @@ init _ url key =
     )
 
 
+emptySelect filterType =
+    { selectState = Select.initState (Select.selectIdentifier <| Types.toIdentifier filterType)
+    , items = []
+    , selectedItem = Nothing
+    }
+
+
 type Msg
     = UrlChange UrlRequest
     | GotHMO Int (Result Http.Error HMO)
     | GotType Int (Result Http.Error Type)
+    | SelectMsg Types.FilterType (Select.Msg (Maybe Int))
 
 
 subscriptions model =
@@ -214,6 +239,54 @@ update msg model =
                         Nothing ->
                             ( model, Cmd.none )
 
+        SelectMsg filterType selectMsg ->
+            let
+                selectModel =
+                    Maybe.withDefault (emptySelect filterType) <|
+                        Dict.get (Types.toIdentifier filterType) model.selects
+
+                ( maybeAction, updatedSelectState, selectCmds ) =
+                    Select.update selectMsg selectModel.selectState
+
+                oldFilters =
+                    model.filters
+
+                setFilter f =
+                    case filterType of
+                        Types.Head ->
+                            { oldFilters | head = f }
+
+                        Types.UpperBody ->
+                            { oldFilters | upperBody = f }
+
+                        Types.LowerBody ->
+                            { oldFilters | lowerBody = f }
+
+                        Types.Accessories ->
+                            { oldFilters | accessories = f }
+
+                newFilters =
+                    case maybeAction of
+                        Just (Select.Select filterId) ->
+                            setFilter filterId
+
+                        -- Is this even possible?
+                        Just Select.Clear ->
+                            setFilter Nothing
+
+                        _ ->
+                            model.filters
+            in
+            ( { model
+                | selects =
+                    Dict.update (Types.toIdentifier filterType)
+                        (Maybe.andThen (\oldSelect -> Just { oldSelect | selectState = updatedSelectState }))
+                        model.selects
+                , filters = newFilters
+              }
+            , Cmd.map (SelectMsg filterType) selectCmds
+            )
+
 
 {-| Whenever there is an update to a view, we use this one function to issue
 the necessary GET requests so all the required data is in the cache. This
@@ -238,7 +311,8 @@ pictureItem ( id, name ) =
     li [] [ a [ href <| fromInt id ] [ text name ] ]
 
 
-{-| This list of tags is currently only shown for developing purposes. Eventually we are going to show only one tag.
+{-| This list of tags is currently only shown for developing purposes.
+Eventually we are going to show only one tag.
 -}
 tagListItem : Dict Int Type -> Int -> Html Msg
 tagListItem typesCache typesId =
@@ -261,7 +335,8 @@ tagListItem typesCache typesId =
                          <|
                             Maybe.map
                                 (\( fType, label ) ->
-                                    [ span [ style "font-weight" "bold" ] [ text <| Types.toString fType ++ ": " ]
+                                    [ span [ style "font-weight" "bold" ]
+                                        [ text <| Types.toString fType ++ ": " ]
                                     , a [ href <| refaUrl ] [ text label ]
                                     ]
                                 )
@@ -318,8 +393,12 @@ relationalView typesCache hmoCache paintingId filters =
 
 {-| An individual filter widget, somewhat like a drop-down menu.
 -}
-filterWidget : Types.FilterType -> Maybe Int -> Html Msg
-filterWidget filterType typeId =
+filterWidget : Dict String SelectElement -> Types.FilterType -> Maybe Int -> Html Msg
+filterWidget selects filterType typeId =
+    let
+        select =
+            Maybe.withDefault (emptySelect filterType) <| Dict.get (Types.toIdentifier filterType) selects
+    in
     div [ style "width" "20%" ]
         [ span [ style "font-weight" "bold" ] [ text <| Types.toString filterType ++ ": " ]
         , text <|
@@ -335,30 +414,34 @@ filterWidget filterType typeId =
                         humanReadableLabel
 
                     else
-                        "Invalid type id for category " ++ fromInt t ++ ", is " ++ Types.toString registeredFilterType ++ "."
+                        "Invalid type id for category "
+                            ++ fromInt t
+                            ++ ", is "
+                            ++ Types.toString registeredFilterType
+                            ++ "."
         ]
 
 
 {-| The filter bar displayed ontop of the site, that lets users select their
 filters for each of the four filter categories.
 -}
-filterBar : Filters -> Html Msg
-filterBar filters =
+filterBar : Dict String SelectElement -> Filters -> Html Msg
+filterBar selects filters =
     div
         [ style "display" "flex"
         , style "flex-direction" "row"
         ]
-        [ filterWidget Types.Head filters.head
-        , filterWidget Types.UpperBody filters.upperBody
-        , filterWidget Types.LowerBody filters.lowerBody
-        , filterWidget Types.Accessories filters.accessories
+        [ filterWidget selects Types.Head filters.head
+        , filterWidget selects Types.UpperBody filters.upperBody
+        , filterWidget selects Types.LowerBody filters.lowerBody
+        , filterWidget selects Types.Accessories filters.accessories
         ]
 
 
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
-        [ filterBar model.filters
+        [ filterBar model.selects model.filters
         , case model.mode of
             Artwalk _ ->
                 artwalkView
