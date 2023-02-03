@@ -131,6 +131,10 @@ subscriptions model =
     Sub.none
 
 
+{-| Build an URL from those components of the model, that are reflected in the URL.
+These components is everything besides the caches, as we want the whole
+application state to be reflected in the URL.
+-}
 buildUrl : ArtwalkMode -> Filters -> String
 buildUrl mode filters =
     UB.absolute
@@ -260,15 +264,24 @@ tagListItem typesCache typesId =
                 ]
 
 
+{-| The artwalk view.
+-}
 artwalkView =
     div []
         [ h1 [] [ text "Artwalk view" ]
         ]
 
 
-relationalView typesCache hmoCache paintingId =
+{-| The relational view
+-}
+relationalView typesCache hmoCache paintingId filters =
     div []
-        [ h1 [] [ text "Relational view" ]
+        [ a
+            [ style "float" "right"
+            , href <| buildUrl (Artwalk { position = 0 }) filters
+            ]
+            [ text "Back to Artwalk" ]
+        , h1 [] [ text "Relational view" ]
         , div []
             [ p []
                 [ a [ href <| refaBaseUrl ++ fromInt paintingId ]
@@ -343,6 +356,6 @@ view model =
                 artwalkView
 
             Relational r ->
-                relationalView model.typesCache model.hmoCache r.paintingId
+                relationalView model.typesCache model.hmoCache r.paintingId model.filters
         ]
     }
