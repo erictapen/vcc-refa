@@ -112,12 +112,7 @@ init _ url key =
                     initialModel
     in
     ( model
-    , case model.mode of
-        Relational r ->
-            fetchHmoById GotHMO r.paintingId
-
-        _ ->
-            Cmd.none
+    , loadResources model.mode model.typesCache model.hmoCache
     )
 
 
@@ -189,40 +184,53 @@ update msg model =
 
         UrlChange urlRequest ->
             case urlRequest of
+                External url ->
+                    ( model
+                    , Browser.Navigation.load url
+                    )
+
                 Internal url ->
-                    case ( UP.parse urlParser url, model.mode ) of
-                        ( Just ( Relational rUrl, _ ), Relational rModel ) ->
-                            if rUrl.paintingId == rModel.paintingId then
+                    case UP.parse urlParser url of
+                        Just ( newMode, newFilters ) ->
+                            if ( newMode, newFilters ) == ( model.mode, model.filters ) then
+                                -- Otherwise we enter an infinite loop of pushUrl's
                                 ( model, Cmd.none )
 
                             else
                                 let
                                     newModel =
-                                        { model | mode = Relational rUrl }
+                                        { model | mode = newMode, filters = newFilters }
                                 in
                                 ( newModel
                                 , Cmd.batch
-                                    [ -- An internal request doesn't automatically pushUrl, so we have to do it by hand.
+                                    [ -- An internal request doesn't automatically pushUrl, so we have
+                                      -- to do it by hand.
                                       Browser.Navigation.pushUrl model.navigationKey <|
                                         buildUrl newModel.mode newModel.filters
-
-                                    -- TODO check wether we have it in cache before making the request
-                                    , fetchHmoById GotHMO rUrl.paintingId
+                                    , loadResources newMode model.typesCache model.hmoCache
                                     ]
                                 )
 
-                        ( Just ( Artwalk aUrl, _ ), Artwalk aModel ) ->
-                            ( { model | mode = Artwalk aUrl }
-                            , Cmd.none
-                            )
-
-                        _ ->
+                        Nothing ->
                             ( model, Cmd.none )
 
-                External url ->
-                    ( model
-                    , Browser.Navigation.load url
-                    )
+
+{-| Whenever there is an update to a view, we use this one function to issue
+the necessary GET requests so all the required data is in the cache. This
+also checks wether data is already in the caches before loading.
+-}
+loadResources : ArtwalkMode -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
+loadResources newMode typesCache hmoCache =
+    case newMode of
+        Relational r ->
+            if Dict.member r.paintingId hmoCache then
+                Cmd.none
+
+            else
+                fetchHmoById GotHMO r.paintingId
+
+        _ ->
+            Cmd.none
 
 
 pictureItem : ( Int, String ) -> Html Msg
