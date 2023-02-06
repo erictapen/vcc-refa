@@ -445,6 +445,7 @@ filterWidget selects filterType typeId =
                                 |> Select.state select.selectState
                                 |> Select.menuItems (menuItemsForFilterType filterType)
                                 |> Select.placeholder "No filter selected"
+                                |> Select.clearable True
                             )
         ]
 
