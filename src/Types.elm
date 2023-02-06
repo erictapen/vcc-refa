@@ -1,4 +1,4 @@
-module Types exposing (FilterType(..), filterTypes, toIdentifier, toString)
+module Types exposing (FilterType(..), filterTypeRegistry, toIdentifier, toString)
 
 import Dict exposing (Dict)
 
@@ -44,8 +44,8 @@ toIdentifier ft =
             "FilterAccessories"
 
 
-filterTypes : Dict Int ( FilterType, String )
-filterTypes =
+filterTypeRegistry : Dict Int ( FilterType, String )
+filterTypeRegistry =
     Dict.fromList
         [ ( 10217, ( Accessories, "Necklace" ) )
         , ( 10300, ( Accessories, "Flowers" ) )

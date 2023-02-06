@@ -5,6 +5,7 @@ import Browser.Navigation
 import Dict exposing (Dict)
 import Html exposing (Html, a, details, div, h1, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (href, src, style)
+import Html.Styled
 import Http
 import List exposing (map)
 import OmekaS as O exposing (..)
@@ -36,7 +37,6 @@ main =
 
 type alias SelectElement =
     { selectState : Select.State
-    , items : List (Select.MenuItem Int)
     , selectedItem : Maybe Int
     }
 
@@ -135,7 +135,6 @@ init _ url key =
 
 emptySelect filterType =
     { selectState = Select.initState (Select.selectIdentifier <| Types.toIdentifier filterType)
-    , items = []
     , selectedItem = Nothing
     }
 
@@ -144,7 +143,7 @@ type Msg
     = UrlChange UrlRequest
     | GotHMO Int (Result Http.Error HMO)
     | GotType Int (Result Http.Error Type)
-    | SelectMsg Types.FilterType (Select.Msg (Maybe Int))
+    | SelectMsg Types.FilterType (Select.Msg Int)
 
 
 subscriptions model =
@@ -268,7 +267,7 @@ update msg model =
                 newFilters =
                     case maybeAction of
                         Just (Select.Select filterId) ->
-                            setFilter filterId
+                            setFilter <| Just filterId
 
                         -- Is this even possible?
                         Just Select.Clear ->
@@ -276,15 +275,22 @@ update msg model =
 
                         _ ->
                             model.filters
+
+                newModel =
+                    { model
+                        | selects =
+                            Dict.update (Types.toIdentifier filterType)
+                                (Maybe.andThen (\oldSelect -> Just { oldSelect | selectState = updatedSelectState }))
+                                model.selects
+                        , filters = newFilters
+                    }
             in
-            ( { model
-                | selects =
-                    Dict.update (Types.toIdentifier filterType)
-                        (Maybe.andThen (\oldSelect -> Just { oldSelect | selectState = updatedSelectState }))
-                        model.selects
-                , filters = newFilters
-              }
-            , Cmd.map (SelectMsg filterType) selectCmds
+            ( newModel
+            , Cmd.batch
+                [ Cmd.map (SelectMsg filterType) selectCmds
+                , Browser.Navigation.pushUrl model.navigationKey <|
+                    buildUrl newModel.mode newModel.filters
+                ]
             )
 
 
@@ -340,7 +346,7 @@ tagListItem typesCache typesId =
                                     , a [ href <| refaUrl ] [ text label ]
                                     ]
                                 )
-                                (Dict.get typesId Types.filterTypes)
+                                (Dict.get typesId Types.filterTypeRegistry)
                         )
                     , span [] [ ul [] <| map pictureItem t.reverseP67 ]
                     ]
@@ -391,6 +397,17 @@ relationalView typesCache hmoCache paintingId filters =
         ]
 
 
+{-| Get all the registered filtertypes as menuitems, for a given FilterType (e.g. Head)
+-}
+menuItemsForFilterType : Types.FilterType -> List (Select.MenuItem Int)
+menuItemsForFilterType filterType =
+    map (\( typeId, ( _, label ) ) -> Select.basicMenuItem { item = typeId, label = label }) <|
+        Dict.toList <|
+            Dict.filter
+                (\k ( ft, _ ) -> ft == filterType)
+                Types.filterTypeRegistry
+
+
 {-| An individual filter widget, somewhat like a drop-down menu.
 -}
 filterWidget : Dict String SelectElement -> Types.FilterType -> Maybe Int -> Html Msg
@@ -401,24 +418,26 @@ filterWidget selects filterType typeId =
     in
     div [ style "width" "20%" ]
         [ span [ style "font-weight" "bold" ] [ text <| Types.toString filterType ++ ": " ]
-        , text <|
-            case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypes) typeId ) of
-                ( Nothing, _ ) ->
-                    "None selected"
+        , case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypeRegistry) typeId ) of
+            ( Just t, Nothing ) ->
+                text <| "Type " ++ fromInt t ++ " is not registered"
 
-                ( Just t, Nothing ) ->
-                    "Type " ++ fromInt t ++ " is not registered"
+            ( _, registeredFilterType ) ->
+                Html.Styled.toUnstyled <|
+                    Html.Styled.map (SelectMsg filterType) <|
+                        Select.view
+                            (Select.single
+                                (case ( typeId, registeredFilterType ) of
+                                    ( Just t, Just ( _, humanReadableLabel ) ) ->
+                                        Just <| Select.basicMenuItem { item = t, label = humanReadableLabel }
 
-                ( Just t, Just ( registeredFilterType, humanReadableLabel ) ) ->
-                    if registeredFilterType == filterType then
-                        humanReadableLabel
-
-                    else
-                        "Invalid type id for category "
-                            ++ fromInt t
-                            ++ ", is "
-                            ++ Types.toString registeredFilterType
-                            ++ "."
+                                    _ ->
+                                        Nothing
+                                )
+                                |> Select.state select.selectState
+                                |> Select.menuItems (menuItemsForFilterType filterType)
+                                |> Select.placeholder "No filter selected"
+                            )
         ]
 
 
