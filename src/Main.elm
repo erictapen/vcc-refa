@@ -3,7 +3,7 @@ module Main exposing (..)
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
 import Dict exposing (Dict)
-import Html exposing (Html, a, details, div, h1, img, li, p, span, summary, text, ul)
+import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (href, src, style)
 import Html.Styled
 import Http
@@ -413,7 +413,19 @@ relationalView typesCache hmoCache paintingId filters =
                         Just thumbnailUrl ->
                             div []
                                 [ img [ src thumbnailUrl ] []
-                                , ul [] <| map (tagListItem typesCache) hmoData.p67refersTo
+                                , div []
+                                    [ h2 [] [ text <| Types.toString Types.Head ]
+                                    ]
+                                , div [] [ h2 [] [ text <| Types.toString Types.UpperBody ] ]
+                                , div [] [ h2 [] [ text <| Types.toString Types.LowerBody ] ]
+                                , div [] [ h2 [] [ text <| Types.toString Types.Accessories ] ]
+                                , div []
+                                    [ h2 []
+                                        [ text "Debug view"
+                                        ]
+                                    , text "This view is for debugging purposes only and will eventually be removed"
+                                    , ul [] <| map (tagListItem typesCache) hmoData.p67refersTo
+                                    ]
                                 ]
             ]
         ]
