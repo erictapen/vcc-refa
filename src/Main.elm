@@ -129,7 +129,7 @@ init _ url key =
                     initialModel
     in
     ( model
-    , loadResources model.mode model.typesCache model.hmoCache
+    , loadResources model.mode model.filters model.typesCache model.hmoCache
     )
 
 
@@ -231,7 +231,7 @@ update msg model =
                                       -- to do it by hand.
                                       Browser.Navigation.pushUrl model.navigationKey <|
                                         buildUrl newModel.mode newModel.filters
-                                    , loadResources newMode model.typesCache model.hmoCache
+                                    , loadResources newMode model.filters model.typesCache model.hmoCache
                                     ]
                                 )
 
@@ -290,6 +290,7 @@ update msg model =
                 [ Cmd.map (SelectMsg filterType) selectCmds
                 , Browser.Navigation.pushUrl model.navigationKey <|
                     buildUrl newModel.mode newModel.filters
+                , loadResources newModel.mode newModel.filters newModel.typesCache newModel.hmoCache
                 ]
             )
 
@@ -298,9 +299,9 @@ update msg model =
 the necessary GET requests so all the required data is in the cache. This
 also checks wether data is already in the caches before loading.
 -}
-loadResources : ArtwalkMode -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
-loadResources newMode typesCache hmoCache =
-    case newMode of
+loadResources : ArtwalkMode -> Filters -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
+loadResources mode filters typesCache hmoCache =
+    case mode of
         Relational r ->
             if Dict.member r.paintingId hmoCache then
                 Cmd.none
@@ -308,8 +309,24 @@ loadResources newMode typesCache hmoCache =
             else
                 fetchHmoById GotHMO r.paintingId
 
-        _ ->
-            Cmd.none
+        Artwalk _ ->
+            Cmd.batch <|
+                map
+                    (Maybe.withDefault Cmd.none
+                        << Maybe.map
+                            (\t ->
+                                if Dict.member t typesCache then
+                                    Cmd.none
+
+                                else
+                                    fetchTypeById GotType t
+                            )
+                    )
+                    [ filters.head
+                    , filters.upperBody
+                    , filters.lowerBody
+                    , filters.accessories
+                    ]
 
 
 pictureItem : ( Int, String ) -> Html Msg
