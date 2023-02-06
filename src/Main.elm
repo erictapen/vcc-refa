@@ -355,9 +355,14 @@ tagListItem typesCache typesId =
 
 {-| The artwalk view.
 -}
-artwalkView =
+artwalkView filters =
     div []
         [ h1 [] [ text "Artwalk view" ]
+        , if filters == emptyFilters then
+            text "Artwalk for no filters at all is not implemented yet. Please make a choice."
+
+          else
+            text "Coming soon"
         ]
 
 
@@ -466,7 +471,7 @@ view model =
         [ filterBar model.selects model.filters
         , case model.mode of
             Artwalk _ ->
-                artwalkView
+                artwalkView model.filters
 
             Relational r ->
                 relationalView model.typesCache model.hmoCache r.paintingId model.filters
