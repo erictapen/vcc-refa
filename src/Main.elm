@@ -422,6 +422,9 @@ filterWidget selects filterType typeId =
             ( Just t, Nothing ) ->
                 text <| "Type " ++ fromInt t ++ " is not registered"
 
+            -- TODO: we never check, wether the typeId set via url actually
+            -- belongs to the right category. Maybe not important enough to
+            -- check?
             ( _, registeredFilterType ) ->
                 Html.Styled.toUnstyled <|
                     Html.Styled.map (SelectMsg filterType) <|
