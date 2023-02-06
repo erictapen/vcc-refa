@@ -52,4 +52,8 @@ filterTypeRegistry =
         , ( 10266, ( Accessories, "Fan" ) )
         , ( 10293, ( Head, "Wig (Woman)" ) )
         , ( 10200, ( UpperBody, "Dress" ) )
+        , ( 10202, ( Head, "Head gear" ) )
+        , ( 10252, ( LowerBody, "Sitting figure" ) )
+        , ( 10218, ( Head, "Earrings" ) )
+        , ( 10239, ( UpperBody, "Armour" ) )
         ]
