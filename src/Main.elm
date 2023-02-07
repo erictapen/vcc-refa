@@ -303,7 +303,9 @@ update msg model =
                     { model
                         | selects =
                             Dict.update (Types.toIdentifier filterType)
-                                (Maybe.andThen (\oldSelect -> Just { oldSelect | selectState = updatedSelectState }))
+                                (Maybe.andThen
+                                    (\oldSelect -> Just { oldSelect | selectState = updatedSelectState })
+                                )
                                 model.selects
                         , filters = newFilters
                     }
