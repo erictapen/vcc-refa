@@ -76,6 +76,24 @@ emptyFilters =
     }
 
 
+{-| A utility function to quickly get the correct filter from Filters.
+-}
+getFilter : Filters -> Types.FilterType -> Maybe Int
+getFilter filters filterType =
+    case filterType of
+        Types.Head ->
+            filters.head
+
+        Types.UpperBody ->
+            filters.upperBody
+
+        Types.LowerBody ->
+            filters.lowerBody
+
+        Types.Accessories ->
+            filters.accessories
+
+
 queryParser : UQ.Parser Filters
 queryParser =
     UQ.map4 Filters
@@ -301,32 +319,36 @@ also checks wether data is already in the caches before loading.
 -}
 loadResources : ArtwalkMode -> Filters -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
 loadResources mode filters typesCache hmoCache =
-    case mode of
-        Relational r ->
-            if Dict.member r.paintingId hmoCache then
-                Cmd.none
+    Cmd.batch <|
+        -- In any case we check, wether all the filters are in the cache.
+        map
+            (Maybe.withDefault Cmd.none
+                << Maybe.map
+                    (\t ->
+                        if Dict.member t typesCache then
+                            Cmd.none
 
-            else
-                fetchHmoById GotHMO r.paintingId
-
-        Artwalk _ ->
-            Cmd.batch <|
-                map
-                    (Maybe.withDefault Cmd.none
-                        << Maybe.map
-                            (\t ->
-                                if Dict.member t typesCache then
-                                    Cmd.none
-
-                                else
-                                    fetchTypeById GotType t
-                            )
+                        else
+                            fetchTypeById GotType t
                     )
-                    [ filters.head
-                    , filters.upperBody
-                    , filters.lowerBody
-                    , filters.accessories
-                    ]
+            )
+            [ filters.head
+            , filters.upperBody
+            , filters.lowerBody
+            , filters.accessories
+            ]
+            -- Stuff that we only need to fetch if we are in the correct mode for it.
+            ++ (case mode of
+                    Relational r ->
+                        if Dict.member r.paintingId hmoCache then
+                            [ Cmd.none ]
+
+                        else
+                            [ fetchHmoById GotHMO r.paintingId ]
+
+                    Artwalk _ ->
+                        [ Cmd.none ]
+               )
 
 
 pictureItem : ( Int, String ) -> Html Msg
@@ -383,6 +405,24 @@ artwalkView filters =
         ]
 
 
+{-| One of the four widgets that display pictures belonging to the selected category
+-}
+relationalTile : Maybe Type -> Maybe Int -> Dict Int (Result String HMO) -> Types.FilterType -> Html Msg
+relationalTile maybeType maybeTypeId hmoCache filterType =
+    div []
+        [ h2 [] [ text <| Types.toString filterType ]
+        , case ( maybeTypeId, maybeType ) of
+            ( Nothing, _ ) ->
+                text <| "Select a filter for " ++ Types.toString filterType ++ "."
+
+            ( _, Nothing ) ->
+                text "Loading.."
+
+            ( Just typeId, Just (Type tr) ) ->
+                ul [] <| map pictureItem tr.reverseP67
+        ]
+
+
 {-| The relational view
 -}
 relationalView typesCache hmoCache paintingId filters =
@@ -413,12 +453,19 @@ relationalView typesCache hmoCache paintingId filters =
                         Just thumbnailUrl ->
                             div []
                                 [ img [ src thumbnailUrl ] []
-                                , div []
-                                    [ h2 [] [ text <| Types.toString Types.Head ]
-                                    ]
-                                , div [] [ h2 [] [ text <| Types.toString Types.UpperBody ] ]
-                                , div [] [ h2 [] [ text <| Types.toString Types.LowerBody ] ]
-                                , div [] [ h2 [] [ text <| Types.toString Types.Accessories ] ]
+                                , div [] <|
+                                    map
+                                        (\ft ->
+                                            relationalTile
+                                                (Maybe.andThen
+                                                    (\t -> Dict.get t typesCache)
+                                                    (getFilter filters ft)
+                                                )
+                                                (getFilter filters ft)
+                                                hmoCache
+                                                ft
+                                        )
+                                        Types.allFilterTypes
                                 , div []
                                     [ h2 []
                                         [ text "Debug view"

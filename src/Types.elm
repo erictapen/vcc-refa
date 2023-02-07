@@ -1,4 +1,4 @@
-module Types exposing (FilterType(..), filterTypeRegistry, toIdentifier, toString)
+module Types exposing (FilterType(..), allFilterTypes, filterTypeRegistry, toIdentifier, toString)
 
 import Dict exposing (Dict)
 
@@ -8,6 +8,15 @@ type FilterType
     | UpperBody
     | LowerBody
     | Accessories
+
+
+allFilterTypes : List FilterType
+allFilterTypes =
+    [ Head
+    , UpperBody
+    , LowerBody
+    , Accessories
+    ]
 
 
 toString : FilterType -> String
