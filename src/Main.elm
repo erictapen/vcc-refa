@@ -131,11 +131,7 @@ init _ url key =
             , selects =
                 Dict.fromList <|
                     map (\ft -> ( Types.toIdentifier ft, emptySelect ft ))
-                        [ Types.Head
-                        , Types.UpperBody
-                        , Types.LowerBody
-                        , Types.Accessories
-                        ]
+                       Types.allFilterTypes
             }
 
         model =
