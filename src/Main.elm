@@ -12,6 +12,7 @@ import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
 import Select
+import Set
 import String exposing (fromInt)
 import Types
 import Url
@@ -399,16 +400,68 @@ tagListItem typesCache typesId =
                 ]
 
 
+isNothing : Maybe a -> Bool
+isNothing maybe =
+    case maybe of
+        Nothing ->
+            True
+
+        _ ->
+            False
+
+
 {-| The artwalk view.
 -}
-artwalkView filters =
+artwalkView filters typesCache hmoCache =
     div []
         [ h1 [] [ text "Artwalk view" ]
         , if filters == emptyFilters then
             text "Artwalk for no filters at all is not implemented yet. Please make a choice."
 
           else
-            text "Coming soon"
+            let
+                setFilters : List Int
+                setFilters =
+                    List.filterMap identity <|
+                        map (getFilter filters) Types.allFilterTypes
+
+                typeCacheResults : List (Maybe Type)
+                typeCacheResults =
+                    map (\t -> Dict.get t typesCache) setFilters
+
+                typeCacheMiss : Bool
+                typeCacheMiss =
+                    not <| List.foldr (&&) True <| map (not << isNothing) typeCacheResults
+            in
+            if typeCacheMiss then
+                -- We don't have every of the four possible filters in the type cache yet.
+                text "Loading"
+
+            else
+                case
+                    Maybe.map Set.toList <|
+                        List.foldr
+                            (\(Type tr) maybeSet ->
+                                case maybeSet of
+                                    Nothing ->
+                                        Just <| Set.fromList tr.reverseP67
+
+                                    Just set ->
+                                        Just <| Set.intersect set <| Set.fromList tr.reverseP67
+                            )
+                            Nothing
+                        <|
+                            List.filterMap identity typeCacheResults
+                of
+                    Nothing ->
+                        text "Artwalk for no filters at all is not implemented yet. Please make a choice."
+
+                    -- The intersection of all reverseP67's doesn't yield any results.
+                    Just [] ->
+                        text "Zero results. Seems like your filters were to rigid. Try removing some!"
+
+                    Just paintings ->
+                        ul [] <| map pictureItem paintings
         ]
 
 
@@ -555,7 +608,7 @@ view model =
         [ filterBar model.selects model.filters
         , case model.mode of
             Artwalk _ ->
-                artwalkView model.filters
+                artwalkView model.filters model.typesCache model.hmoCache
 
             Relational r ->
                 relationalView model.baseUrlPath model.typesCache model.hmoCache r.paintingId model.filters
