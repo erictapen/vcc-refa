@@ -65,4 +65,6 @@ filterTypeRegistry =
         , ( 10252, ( LowerBody, "Sitting figure" ) )
         , ( 10218, ( Head, "Earrings" ) )
         , ( 10239, ( UpperBody, "Armour" ) )
+        , ( 10200, ( Accessories, "Gloves" ) )
+        , ( 10201, ( UpperBody, "Ladies dress" ) )
         ]
