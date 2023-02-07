@@ -42,7 +42,8 @@ type alias SelectElement =
 
 
 type alias Model =
-    { mode : ArtwalkMode
+    { baseUrlPath : String
+    , mode : ArtwalkMode
     , filters : Filters
     , navigationKey : Browser.Navigation.Key
     , typesCache : Dict Int Type
@@ -124,6 +125,12 @@ init _ url key =
     let
         initialModel =
             { navigationKey = key
+            , baseUrlPath =
+                if String.startsWith "/refa" url.path then
+                    "/refa"
+
+                else
+                    ""
             , filters = emptyFilters
             , mode = Artwalk { position = 0 }
             , typesCache = Dict.empty
@@ -131,7 +138,7 @@ init _ url key =
             , selects =
                 Dict.fromList <|
                     map (\ft -> ( Types.toIdentifier ft, emptySelect ft ))
-                       Types.allFilterTypes
+                        Types.allFilterTypes
             }
 
         model =
@@ -168,23 +175,25 @@ subscriptions model =
 These components is everything besides the caches, as we want the whole
 application state to be reflected in the URL.
 -}
-buildUrl : ArtwalkMode -> Filters -> String
-buildUrl mode filters =
-    UB.absolute
-        (case mode of
-            Relational r ->
-                [ fromInt r.paintingId ]
+buildUrl : String -> ArtwalkMode -> Filters -> String
+buildUrl baseUrlPath mode filters =
+    baseUrlPath
+        ++ (UB.absolute
+                (case mode of
+                    Relational r ->
+                        [ fromInt r.paintingId ]
 
-            _ ->
-                []
-        )
-    <|
-        List.filterMap identity
-            [ Maybe.map (UB.int "head") filters.head
-            , Maybe.map (UB.int "upperBody") filters.upperBody
-            , Maybe.map (UB.int "lowerBody") filters.lowerBody
-            , Maybe.map (UB.int "accessories") filters.accessories
-            ]
+                    _ ->
+                        []
+                )
+            <|
+                List.filterMap identity
+                    [ Maybe.map (UB.int "head") filters.head
+                    , Maybe.map (UB.int "upperBody") filters.upperBody
+                    , Maybe.map (UB.int "lowerBody") filters.lowerBody
+                    , Maybe.map (UB.int "accessories") filters.accessories
+                    ]
+           )
 
 
 update : Msg -> Model -> ( Model, Platform.Cmd.Cmd Msg )
@@ -244,7 +253,7 @@ update msg model =
                                     [ -- An internal request doesn't automatically pushUrl, so we have
                                       -- to do it by hand.
                                       Browser.Navigation.pushUrl model.navigationKey <|
-                                        buildUrl newModel.mode newModel.filters
+                                        buildUrl model.baseUrlPath newModel.mode newModel.filters
                                     , loadResources newMode model.filters model.typesCache model.hmoCache
                                     ]
                                 )
@@ -303,7 +312,7 @@ update msg model =
             , Cmd.batch
                 [ Cmd.map (SelectMsg filterType) selectCmds
                 , Browser.Navigation.pushUrl model.navigationKey <|
-                    buildUrl newModel.mode newModel.filters
+                    buildUrl model.baseUrlPath newModel.mode newModel.filters
                 , loadResources newModel.mode newModel.filters newModel.typesCache newModel.hmoCache
                 ]
             )
@@ -421,11 +430,11 @@ relationalTile maybeType maybeTypeId hmoCache filterType =
 
 {-| The relational view
 -}
-relationalView typesCache hmoCache paintingId filters =
+relationalView baseUrlPath typesCache hmoCache paintingId filters =
     div []
         [ a
             [ style "float" "right"
-            , href <| buildUrl (Artwalk { position = 0 }) filters
+            , href <| buildUrl baseUrlPath (Artwalk { position = 0 }) filters
             ]
             [ text "Back to Artwalk" ]
         , h1 [] [ text "Relational view" ]
@@ -547,6 +556,6 @@ view model =
                 artwalkView model.filters
 
             Relational r ->
-                relationalView model.typesCache model.hmoCache r.paintingId model.filters
+                relationalView model.baseUrlPath model.typesCache model.hmoCache r.paintingId model.filters
         ]
     }
