@@ -23,7 +23,7 @@ toString : FilterType -> String
 toString ft =
     case ft of
         Head ->
-            "Head"
+            "Head and Neck"
 
         UpperBody ->
             "Upper body"
