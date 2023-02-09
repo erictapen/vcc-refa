@@ -6,6 +6,13 @@ module OmekaS exposing
     , fetchTypeById
     )
 
+{-| Our abstraction over the [OmekaS REST API][o].
+It only extracts the very few items necessary for us.
+
+[o]: https://omeka.org/s/docs/developer/api/rest_api/
+
+-}
+
 import Http
 import Json.Decode as JD exposing (andThen, at, fail, field, int, list, maybe, string, succeed)
 import List exposing (member)
