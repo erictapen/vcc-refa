@@ -10,6 +10,7 @@ import Http
 import Json.Decode as JD exposing (andThen, at, fail, field, int, list, maybe, string, succeed)
 import List exposing (member)
 import String exposing (fromInt)
+import Utils exposing (removeNothings)
 
 
 baseUrl =
@@ -81,7 +82,7 @@ e24HmoDecoder =
             JD.map3 e24Hmo
                 (field "o:id" int)
                 (maybe (at [ "thumbnail_display_urls", "medium" ] string))
-                (JD.map (List.filterMap identity) (field "ecrm:P67_refers_to" (list oResourceDecoder)))
+                (JD.map removeNothings (field "ecrm:P67_refers_to" (list oResourceDecoder)))
 
 
 e55TypeDecoder : JD.Decoder Type
@@ -106,10 +107,7 @@ type alias PrefLabel =
 prefLabelDecoder : JD.Decoder String
 prefLabelDecoder =
     field "skos:prefLabel"
-        (JD.map
-            (List.filterMap identity)
-            (list prefLabelDecoder2)
-        )
+        (JD.map removeNothings <| list prefLabelDecoder2)
         |> andThen selectPreflabel
 
 

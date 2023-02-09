@@ -19,6 +19,7 @@ import Url
 import Url.Builder as UB
 import Url.Parser as UP exposing ((</>), (<?>))
 import Url.Parser.Query as UQ
+import Utils exposing (isNothing, removeNothings)
 
 
 refaBaseUrl =
@@ -188,7 +189,7 @@ buildUrl baseUrlPath mode filters =
                         []
                 )
             <|
-                List.filterMap identity
+                removeNothings
                     [ Maybe.map (UB.int "head") filters.head
                     , Maybe.map (UB.int "upperBody") filters.upperBody
                     , Maybe.map (UB.int "lowerBody") filters.lowerBody
@@ -400,16 +401,6 @@ tagListItem typesCache typesId =
                 ]
 
 
-isNothing : Maybe a -> Bool
-isNothing maybe =
-    case maybe of
-        Nothing ->
-            True
-
-        _ ->
-            False
-
-
 {-| The artwalk view.
 -}
 artwalkView filters typesCache hmoCache =
@@ -418,7 +409,7 @@ artwalkView filters typesCache hmoCache =
         , let
             setFilters : List Int
             setFilters =
-                List.filterMap identity <|
+                removeNothings <|
                     map (getFilter filters) Types.allFilterTypes
 
             typeCacheResults : List (Maybe Type)
@@ -447,7 +438,7 @@ artwalkView filters typesCache hmoCache =
                         )
                         Nothing
                     <|
-                        List.filterMap identity typeCacheResults
+                        removeNothings typeCacheResults
             of
                 Nothing ->
                     text "Artwalk for no filters at all is not implemented yet. Please make a choice."
