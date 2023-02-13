@@ -198,6 +198,14 @@ buildUrl baseUrlPath mode filters =
            )
 
 
+{-| Variation of buildUrl for building an url with filters and the painting id
+to be displayed in relational mode.
+-}
+buildUrlRelationalFromId : String -> Filters -> Int -> String
+buildUrlRelationalFromId baseUrlPath filters id =
+    buildUrl baseUrlPath (Relational { paintingId = id }) filters
+
+
 update : Msg -> Model -> ( Model, Platform.Cmd.Cmd Msg )
 update msg model =
     case msg of
@@ -360,16 +368,16 @@ loadResources mode filters typesCache hmoCache =
                )
 
 
-pictureItem : ( Int, String ) -> Html Msg
-pictureItem ( id, name ) =
-    li [] [ a [ href <| fromInt id ] [ text name ] ]
+paintingItem : (Int -> String) -> ( Int, String ) -> Html Msg
+paintingItem paintingUrl ( id, name ) =
+    li [] [ a [ href <| paintingUrl id ] [ text name ] ]
 
 
 {-| This list of tags is currently only shown for developing purposes.
 Eventually we are going to show only one tag.
 -}
-tagListItem : Dict Int Type -> Int -> Html Msg
-tagListItem typesCache typesId =
+tagListItem : (Int -> String) -> Dict Int Type -> Int -> Html Msg
+tagListItem paintingUrl typesCache typesId =
     li [] <|
         case Dict.get typesId typesCache of
             Nothing ->
@@ -396,14 +404,14 @@ tagListItem typesCache typesId =
                                 )
                                 (Dict.get typesId Types.filterTypeRegistry)
                         )
-                    , span [] [ ul [] <| map pictureItem t.reverseP67 ]
+                    , span [] [ ul [] <| map (paintingItem paintingUrl) t.reverseP67 ]
                     ]
                 ]
 
 
 {-| The artwalk view.
 -}
-artwalkView filters typesCache hmoCache =
+artwalkView baseUrlPath filters typesCache hmoCache =
     div []
         [ h1 [] [ text "Artwalk view" ]
         , let
@@ -448,14 +456,20 @@ artwalkView filters typesCache hmoCache =
                     text "Zero results. Seems like your filters were to rigid. Try removing some!"
 
                 Just paintings ->
-                    ul [] <| map pictureItem paintings
+                    ul [] <| map (paintingItem (buildUrlRelationalFromId baseUrlPath filters)) paintings
         ]
 
 
 {-| One of the four widgets that display pictures belonging to the selected category
 -}
-relationalTile : Maybe Type -> Maybe Int -> Dict Int (Result String HMO) -> Types.FilterType -> Html Msg
-relationalTile maybeType maybeTypeId hmoCache filterType =
+relationalTile :
+    (Int -> String)
+    -> Maybe Type
+    -> Maybe Int
+    -> Dict Int (Result String HMO)
+    -> Types.FilterType
+    -> Html Msg
+relationalTile paintingUrl maybeType maybeTypeId hmoCache filterType =
     div []
         [ h2 [] [ text <| Types.toString filterType ]
         , case ( maybeTypeId, maybeType ) of
@@ -466,7 +480,7 @@ relationalTile maybeType maybeTypeId hmoCache filterType =
                 text "Loading.."
 
             ( Just typeId, Just (Type tr) ) ->
-                ul [] <| map pictureItem tr.reverseP67
+                ul [] <| map (paintingItem paintingUrl) tr.reverseP67
         ]
 
 
@@ -504,6 +518,7 @@ relationalView baseUrlPath typesCache hmoCache paintingId filters =
                                     map
                                         (\ft ->
                                             relationalTile
+                                                (buildUrlRelationalFromId baseUrlPath filters)
                                                 (Maybe.andThen
                                                     (\t -> Dict.get t typesCache)
                                                     (getFilter filters ft)
@@ -518,7 +533,13 @@ relationalView baseUrlPath typesCache hmoCache paintingId filters =
                                         [ text "Debug view"
                                         ]
                                     , text "This view is for debugging purposes only and will eventually be removed"
-                                    , ul [] <| map (tagListItem typesCache) hmoData.p67refersTo
+                                    , ul [] <|
+                                        map
+                                            (tagListItem
+                                                (buildUrlRelationalFromId baseUrlPath filters)
+                                                typesCache
+                                            )
+                                            hmoData.p67refersTo
                                     ]
                                 ]
             ]
@@ -595,7 +616,7 @@ view model =
         [ filterBar model.selects model.filters
         , case model.mode of
             Artwalk _ ->
-                artwalkView model.filters model.typesCache model.hmoCache
+                artwalkView model.baseUrlPath model.filters model.typesCache model.hmoCache
 
             Relational r ->
                 relationalView model.baseUrlPath model.typesCache model.hmoCache r.paintingId model.filters
