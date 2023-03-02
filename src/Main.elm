@@ -613,12 +613,14 @@ filterBar selects filters =
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
-        [ filterBar model.selects model.filters
-        , case model.mode of
+        case model.mode of
             Artwalk _ ->
-                artwalkView model.baseUrlPath model.filters model.typesCache model.hmoCache
+                [ h1 [] [ text "The Artwalk of History" ]
+                , filterBar model.selects model.filters
+                , artwalkView model.baseUrlPath model.filters model.typesCache model.hmoCache
+                ]
 
             Relational r ->
-                relationalView model.baseUrlPath model.typesCache model.hmoCache r.paintingId model.filters
-        ]
+                [ filterBar model.selects model.filters
+                , relationalView model.baseUrlPath model.typesCache model.hmoCache r.paintingId model.filters ]
     }
