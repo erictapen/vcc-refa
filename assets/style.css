@@ -5,3 +5,10 @@
     font-weight: normal;
 }
 
+body {
+  background: black;
+}
+
+h1 {
+  font-familiy "DM Serif Display";
+}
