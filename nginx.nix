@@ -52,12 +52,12 @@ let
             allow 127.0.0.1;
             deny all;
 
-            location / {
+            location /refa {
                 root   ./.;
                 try_files /index.html =404;
             }
 
-            location /assets/ {
+            location /refa/assets/ {
                 alias ./assets/;
             }
 

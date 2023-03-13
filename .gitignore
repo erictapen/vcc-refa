@@ -2,5 +2,7 @@
 notes.md
 elm-stuff/
 *.html
+!index.html
+*.js
 result*
 .nginx/

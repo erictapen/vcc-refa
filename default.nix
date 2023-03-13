@@ -45,7 +45,7 @@ let
                 | uglifyjs --mangle --output $out/assets/${module}.min.${extension}
           ''}
         '') targets)}
-        cp ${./assets}/index.html $out/
+        cp ${./index.html} $out/index.html
       '';
     };
 in mkDerivation {
