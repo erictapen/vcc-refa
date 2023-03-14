@@ -7,8 +7,9 @@
 
 body {
   background: black;
+  color: white;
 }
 
 h1 {
-  font-familiy "DM Serif Display";
+  font-family: "DM Serif Display";
 }
