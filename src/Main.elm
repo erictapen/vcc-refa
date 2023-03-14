@@ -4,7 +4,7 @@ import Browser exposing (UrlRequest(..))
 import Browser.Navigation
 import Dict exposing (Dict)
 import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
-import Html.Attributes exposing (href, src, style)
+import Html.Attributes exposing (href, id, src, style, class)
 import Html.Styled
 import Http
 import List exposing (map)
@@ -613,14 +613,31 @@ filterBar selects filters =
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
-        case model.mode of
-            Artwalk _ ->
-                [ h1 [] [ text "The Artwalk of History" ]
-                , filterBar model.selects model.filters
-                , artwalkView model.baseUrlPath model.filters model.typesCache model.hmoCache
-                ]
+        [ div [ id "header" ]
+            [ h1 [] [ text "The Artwalk of History" ]
+            , div [ class "refabold", class "gelb" ] [ text "The Collection" ]
+            , div [ ] [ text "About" ]
+            , div [] [ text "Contact" ]
+            ]
+        ]
+            ++ (case model.mode of
+                    Artwalk _ ->
+                        [ filterBar model.selects model.filters
+                        , artwalkView
+                            model.baseUrlPath
+                            model.filters
+                            model.typesCache
+                            model.hmoCache
+                        ]
 
-            Relational r ->
-                [ filterBar model.selects model.filters
-                , relationalView model.baseUrlPath model.typesCache model.hmoCache r.paintingId model.filters ]
+                    Relational r ->
+                        [ filterBar model.selects model.filters
+                        , relationalView
+                            model.baseUrlPath
+                            model.typesCache
+                            model.hmoCache
+                            r.paintingId
+                            model.filters
+                        ]
+               )
     }

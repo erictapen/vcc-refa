@@ -2,14 +2,49 @@
     font-family: "DM Serif Display";
     src: url('/refa/assets/DMSerifDisplay-Regular.ttf') format('truetype');
     font-style: normal;
-    font-weight: normal;
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "Quicksand";
+    src: url('/refa/assets/Quicksand[wght].ttf') format('truetype');
+    font-style: normal;
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: "Quicksand";
+    src: url('/refa/assets/Quicksand[wght].ttf') format('truetype');
+    font-style: normal;
+    font-weight: 400;
 }
 
 body {
   background: black;
   color: white;
+  font-family: "Quicksand";
+  font-weight: 400;
+  font-size: 14px;
 }
 
 h1 {
   font-family: "DM Serif Display";
+  font-size: 26px;
+  color: #d4c263;
+}
+
+.refabold {
+  font-weight: 700;
+}
+
+.gelb {
+  color: #d4c263;
+}
+
+.primary-grey {
+  color: #5b6e82;
+}
+
+#header {
+  display: flex;
 }
