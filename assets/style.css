@@ -25,6 +25,7 @@ body {
   font-family: "Quicksand";
   font-weight: 400;
   font-size: 14px;
+  margin: 0;
 }
 
 h1 {
@@ -33,6 +34,7 @@ h1 {
   color: #d4c263;
   margin-top: 1em;
   margin-left: 4em;
+  margin-bottom: 0.5em;
 }
 
 .refabold {
@@ -62,4 +64,21 @@ h1 {
 .headerlink {
   margin-left: 0.75em;
   margin-right: 0.75em;
+}
+
+hr {
+  margin: 0;
+}
+
+#filterbar {
+  display: flex;
+  flex-direction: row;
+  border-top-color: #d4c263;
+  border-top-style: solid;
+  border-top-width: 0.5px;
+  padding-top: 1.7em;
+  padding-bottom: 1.7em;
+  border-bottom-color: #5b6e82;
+  border-bottom-style: solid;
+  border-bottom-width: 2.5px;
 }

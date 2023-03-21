@@ -590,8 +590,7 @@ filters for each of the four filter categories.
 filterBar : Dict String SelectElement -> Filters -> Html Msg
 filterBar selects filters =
     div
-        [ style "display" "flex"
-        , style "flex-direction" "row"
+        [ id "filterbar"
         ]
         [ filterWidget selects Types.Head filters.head
         , filterWidget selects Types.UpperBody filters.upperBody
@@ -606,13 +605,13 @@ view model =
         [ div [ id "header" ]
             [ h1 [] [ text "The Artwalk of History" ]
             , div [ id "headerlinks" ]
-                [ div [ class "refabold", class "gelb", class "headerlink" ] [ text "The Collection" ]
+                [ div [ class "headerlink", class "refabold", class "gelb" ] [ text "The Collection" ]
 
                 -- TODO add link
-                , div [ class "headerlink" ] [ text "About" ]
+                , div [ class "headerlink", class "primary-grey" ] [ text "About" ]
 
                 -- TODO add link
-                , div [ class "headerlink" ] [ text "Contact" ]
+                , div [ class "headerlink", class "primary-grey" ] [ text "Contact" ]
                 ]
             ]
         ]
