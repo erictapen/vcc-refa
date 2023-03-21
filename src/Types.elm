@@ -1,4 +1,4 @@
-module Types exposing (FilterType(..), allFilterTypes, filterTypeRegistry, toIdentifier, toString)
+module Types exposing (FilterType(..), allFilterTypes, filterTypeRegistry, toColor, toIdentifier, toString)
 
 import Dict exposing (Dict)
 
@@ -33,6 +33,22 @@ toString ft =
 
         Accessories ->
             "Accessories"
+
+
+toColor : FilterType -> String
+toColor ft =
+    case ft of
+        Head ->
+            "#A6BED9"
+
+        UpperBody ->
+            "#BBE2BC"
+
+        LowerBody ->
+            "#F3CA8E"
+
+        Accessories ->
+            "#E2BBDB"
 
 
 {-| This has to produce unique strings!

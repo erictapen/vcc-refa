@@ -82,4 +82,11 @@ hr {
   border-bottom-color: #5b6e82;
   border-bottom-style: solid;
   border-bottom-width: 2.5px;
+  padding-left: 10em;
+}
+
+#go-to-network-view {
+  color: #150D26;
+  background: #CEB8FF;
+
 }

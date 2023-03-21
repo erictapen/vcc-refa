@@ -556,7 +556,9 @@ filterWidget selects filterType typeId =
             Maybe.withDefault (emptySelect filterType) <| Dict.get (Types.toIdentifier filterType) selects
     in
     div [ style "width" "20%" ]
-        [ span [ style "font-weight" "bold" ] [ text <| Types.toString filterType ++ ": " ]
+        [ span
+            [ style "font-weight" "bold", style "color" <| Types.toColor filterType ]
+            [ text <| Types.toString filterType ]
         , case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypeRegistry) typeId ) of
             ( Just t, Nothing ) ->
                 text <| "Type " ++ fromInt t ++ " is not registered"
@@ -578,7 +580,7 @@ filterWidget selects filterType typeId =
                                 )
                                 |> Select.state select.selectState
                                 |> Select.menuItems (menuItemsForFilterType filterType)
-                                |> Select.placeholder "No filter selected"
+                                |> Select.placeholder "Add Filter +"
                                 |> Select.clearable True
                             )
         ]
