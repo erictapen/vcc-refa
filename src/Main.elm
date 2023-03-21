@@ -4,7 +4,7 @@ import Browser exposing (UrlRequest(..))
 import Browser.Navigation
 import Dict exposing (Dict)
 import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
-import Html.Attributes exposing (href, id, src, style, class)
+import Html.Attributes exposing (class, href, id, src, style)
 import Html.Styled
 import Http
 import List exposing (map)
@@ -25,6 +25,7 @@ import Utils exposing (isNothing, removeNothings)
 refaBaseUrl =
     "https://uclab.fh-potsdam.de/refa/admin/item/"
 
+baseUrlPath = "/refa"
 
 main =
     Browser.application
@@ -44,8 +45,7 @@ type alias SelectElement =
 
 
 type alias Model =
-    { baseUrlPath : String
-    , mode : ArtwalkMode
+    { mode : ArtwalkMode
     , filters : Filters
     , navigationKey : Browser.Navigation.Key
     , typesCache : Dict Int Type
@@ -108,18 +108,11 @@ queryParser =
 
 urlParser : UP.Parser (( ArtwalkMode, Filters ) -> a) a
 urlParser =
-    let
-        refaUrl =
-            UP.oneOf
+    UP.s "refa"
+        </> UP.oneOf
                 [ UP.map (\i f -> ( Relational { paintingId = i }, f )) (UP.int <?> queryParser)
                 , UP.map (\f -> ( Artwalk { position = 0 }, f )) (UP.top <?> queryParser)
                 ]
-    in
-    -- We allow "refa/" in front of the actual url, for easier hosting atm
-    UP.oneOf
-        [ refaUrl
-        , UP.s "refa" </> refaUrl
-        ]
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd.Cmd Msg )
@@ -127,12 +120,6 @@ init _ url key =
     let
         initialModel =
             { navigationKey = key
-            , baseUrlPath =
-                if String.startsWith "/refa" url.path then
-                    "/refa"
-
-                else
-                    ""
             , filters = emptyFilters
             , mode = Artwalk { position = 0 }
             , typesCache = Dict.empty
@@ -177,8 +164,8 @@ subscriptions model =
 These components is everything besides the caches, as we want the whole
 application state to be reflected in the URL.
 -}
-buildUrl : String -> ArtwalkMode -> Filters -> String
-buildUrl baseUrlPath mode filters =
+buildUrl : ArtwalkMode -> Filters -> String
+buildUrl mode filters =
     baseUrlPath
         ++ (UB.absolute
                 (case mode of
@@ -201,9 +188,9 @@ buildUrl baseUrlPath mode filters =
 {-| Variation of buildUrl for building an url with filters and the painting id
 to be displayed in relational mode.
 -}
-buildUrlRelationalFromId : String -> Filters -> Int -> String
-buildUrlRelationalFromId baseUrlPath filters id =
-    buildUrl baseUrlPath (Relational { paintingId = id }) filters
+buildUrlRelationalFromId : Filters -> Int -> String
+buildUrlRelationalFromId filters id =
+    buildUrl (Relational { paintingId = id }) filters
 
 
 update : Msg -> Model -> ( Model, Platform.Cmd.Cmd Msg )
@@ -263,7 +250,7 @@ update msg model =
                                     [ -- An internal request doesn't automatically pushUrl, so we have
                                       -- to do it by hand.
                                       Browser.Navigation.pushUrl model.navigationKey <|
-                                        buildUrl model.baseUrlPath newModel.mode newModel.filters
+                                        buildUrl newModel.mode newModel.filters
                                     , loadResources newMode model.filters model.typesCache model.hmoCache
                                     ]
                                 )
@@ -324,7 +311,7 @@ update msg model =
             , Cmd.batch
                 [ Cmd.map (SelectMsg filterType) selectCmds
                 , Browser.Navigation.pushUrl model.navigationKey <|
-                    buildUrl model.baseUrlPath newModel.mode newModel.filters
+                    buildUrl newModel.mode newModel.filters
                 , loadResources newModel.mode newModel.filters newModel.typesCache newModel.hmoCache
                 ]
             )
@@ -411,7 +398,7 @@ tagListItem paintingUrl typesCache typesId =
 
 {-| The artwalk view.
 -}
-artwalkView baseUrlPath filters typesCache hmoCache =
+artwalkView filters typesCache hmoCache =
     div []
         [ h1 [] [ text "Artwalk view" ]
         , let
@@ -456,7 +443,7 @@ artwalkView baseUrlPath filters typesCache hmoCache =
                     text "Zero results. Seems like your filters were to rigid. Try removing some!"
 
                 Just paintings ->
-                    ul [] <| map (paintingItem (buildUrlRelationalFromId baseUrlPath filters)) paintings
+                    ul [] <| map (paintingItem (buildUrlRelationalFromId filters)) paintings
         ]
 
 
@@ -486,11 +473,11 @@ relationalTile paintingUrl maybeType maybeTypeId hmoCache filterType =
 
 {-| The relational view
 -}
-relationalView baseUrlPath typesCache hmoCache paintingId filters =
+relationalView typesCache hmoCache paintingId filters =
     div []
         [ a
             [ style "float" "right"
-            , href <| buildUrl baseUrlPath (Artwalk { position = 0 }) filters
+            , href <| buildUrl (Artwalk { position = 0 }) filters
             ]
             [ text "Back to Artwalk" ]
         , h1 [] [ text "Relational view" ]
@@ -518,7 +505,7 @@ relationalView baseUrlPath typesCache hmoCache paintingId filters =
                                     map
                                         (\ft ->
                                             relationalTile
-                                                (buildUrlRelationalFromId baseUrlPath filters)
+                                                (buildUrlRelationalFromId filters)
                                                 (Maybe.andThen
                                                     (\t -> Dict.get t typesCache)
                                                     (getFilter filters ft)
@@ -536,7 +523,7 @@ relationalView baseUrlPath typesCache hmoCache paintingId filters =
                                     , ul [] <|
                                         map
                                             (tagListItem
-                                                (buildUrlRelationalFromId baseUrlPath filters)
+                                                (buildUrlRelationalFromId filters)
                                                 typesCache
                                             )
                                             hmoData.p67refersTo
@@ -616,7 +603,7 @@ view model =
         [ div [ id "header" ]
             [ h1 [] [ text "The Artwalk of History" ]
             , div [ class "refabold", class "gelb" ] [ text "The Collection" ]
-            , div [ ] [ text "About" ]
+            , div [] [ text "About" ]
             , div [] [ text "Contact" ]
             ]
         ]
@@ -624,7 +611,6 @@ view model =
                     Artwalk _ ->
                         [ filterBar model.selects model.filters
                         , artwalkView
-                            model.baseUrlPath
                             model.filters
                             model.typesCache
                             model.hmoCache
@@ -633,7 +619,6 @@ view model =
                     Relational r ->
                         [ filterBar model.selects model.filters
                         , relationalView
-                            model.baseUrlPath
                             model.typesCache
                             model.hmoCache
                             r.paintingId
