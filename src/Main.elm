@@ -589,8 +589,8 @@ filterWidget selects filterType typeId =
 {-| The filter bar displayed ontop of the site, that lets users select their
 filters for each of the four filter categories.
 -}
-filterBar : Dict String SelectElement -> Filters -> Html Msg
-filterBar selects filters =
+filterBar : ArtwalkMode -> Dict String SelectElement -> Filters -> Html Msg
+filterBar mode selects filters =
     div
         [ id "filterbar"
         ]
@@ -598,6 +598,28 @@ filterBar selects filters =
         , filterWidget selects Types.UpperBody filters.upperBody
         , filterWidget selects Types.LowerBody filters.lowerBody
         , filterWidget selects Types.Accessories filters.accessories
+        , case mode of
+            Artwalk _ ->
+                a
+                    [ id "go-to-network-view"
+                    , class "filterbar-widget"
+                    -- TODO use correct paintingId here
+                    , href <| buildUrl (Relational { paintingId = 0 }) filters
+                    ]
+                    [ text "Go to Network View" ]
+
+            Relational _ ->
+                a
+                    [ id "go-to-artwalk-view"
+                    , class "filterbar-widget"
+                    , href <| buildUrl (Artwalk { position = 0 }) filters
+                    ]
+                    [ text "Go to Artwalk View" ]
+        , a
+            [ id "clear-all"
+            , href <| buildUrl mode emptyFilters
+            ]
+            [ text "Clear all" ]
         ]
 
 
@@ -616,19 +638,18 @@ view model =
                 , div [ class "headerlink", class "primary-grey" ] [ text "Contact" ]
                 ]
             ]
+        , filterBar model.mode model.selects model.filters
         ]
             ++ (case model.mode of
                     Artwalk _ ->
-                        [ filterBar model.selects model.filters
-                        , artwalkView
+                        [ artwalkView
                             model.filters
                             model.typesCache
                             model.hmoCache
                         ]
 
                     Relational r ->
-                        [ filterBar model.selects model.filters
-                        , relationalView
+                        [ relationalView
                             model.typesCache
                             model.hmoCache
                             r.paintingId

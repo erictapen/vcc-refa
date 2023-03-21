@@ -85,8 +85,20 @@ hr {
   padding-left: 10em;
 }
 
+.filterbar-widget {
+  border-radius: 12px;
+}
+
 #go-to-network-view {
   color: #150D26;
   background: #CEB8FF;
+}
 
+#go-to-artwalk-view {
+  color: #242214;
+  background: #FFE977;
+}
+
+#clear-all {
+  color: #DB7070;
 }
