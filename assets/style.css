@@ -20,7 +20,7 @@
 }
 
 body {
-  background: black;
+  background: #09161B;
   color: white;
   font-family: "Quicksand";
   font-weight: 400;
@@ -31,6 +31,8 @@ h1 {
   font-family: "DM Serif Display";
   font-size: 26px;
   color: #d4c263;
+  margin-top: 1em;
+  margin-left: 4em;
 }
 
 .refabold {
@@ -47,4 +49,17 @@ h1 {
 
 #header {
   display: flex;
+}
+
+#headerlinks {
+  display: flex;
+  position: absolute;
+  padding-right: 10em;
+  padding-top: 3em;
+  right: 0;
+}
+
+.headerlink {
+  margin-left: 0.75em;
+  margin-right: 0.75em;
 }

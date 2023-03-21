@@ -25,7 +25,10 @@ import Utils exposing (isNothing, removeNothings)
 refaBaseUrl =
     "https://uclab.fh-potsdam.de/refa/admin/item/"
 
-baseUrlPath = "/refa"
+
+baseUrlPath =
+    "/refa"
+
 
 main =
     Browser.application
@@ -602,9 +605,15 @@ view model =
     , body =
         [ div [ id "header" ]
             [ h1 [] [ text "The Artwalk of History" ]
-            , div [ class "refabold", class "gelb" ] [ text "The Collection" ]
-            , div [] [ text "About" ]
-            , div [] [ text "Contact" ]
+            , div [ id "headerlinks" ]
+                [ div [ class "refabold", class "gelb", class "headerlink" ] [ text "The Collection" ]
+
+                -- TODO add link
+                , div [ class "headerlink" ] [ text "About" ]
+
+                -- TODO add link
+                , div [ class "headerlink" ] [ text "Contact" ]
+                ]
             ]
         ]
             ++ (case model.mode of
