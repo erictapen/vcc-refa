@@ -73,7 +73,6 @@ hr {
 
 #filterbar {
   display: grid;
-  width: 100%;
   grid-template-columns: 1em 20em 20em 20em 20em 2em 22em 5em;
   gap: 1em;
   grid-auto-rows: 1em auto;
