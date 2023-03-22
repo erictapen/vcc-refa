@@ -2,6 +2,8 @@ module Main exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
+import Constants exposing (baseUrlPath, refaBaseUrl)
+import Css
 import Dict exposing (Dict)
 import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (class, href, id, src, style)
@@ -12,6 +14,7 @@ import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
 import Select
+import Select.Styles as SS
 import Set
 import String exposing (fromInt)
 import Types
@@ -20,14 +23,6 @@ import Url.Builder as UB
 import Url.Parser as UP exposing ((</>), (<?>))
 import Url.Parser.Query as UQ
 import Utils exposing (isNothing, removeNothings)
-
-
-refaBaseUrl =
-    "https://uclab.fh-potsdam.de/refa/admin/item/"
-
-
-baseUrlPath =
-    "/refa"
 
 
 main =
@@ -549,17 +544,26 @@ menuItemsForFilterType filterType =
 
 {-| An individual filter widget, somewhat like a drop-down menu.
 -}
-filterWidget : Dict String SelectElement -> Types.FilterType -> Maybe Int -> Html Msg
+filterWidget : Dict String SelectElement -> Types.FilterType -> Maybe Int -> List (Html Msg)
 filterWidget selects filterType typeId =
     let
         select =
             Maybe.withDefault (emptySelect filterType) <| Dict.get (Types.toIdentifier filterType) selects
     in
-    div [ style "width" "20%" ]
-        [ span
-            [ style "font-weight" "bold", style "color" <| Types.toColor filterType ]
-            [ text <| Types.toString filterType ]
-        , case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypeRegistry) typeId ) of
+    [ span
+        [ style "font-weight" "bold"
+        , style "color" <| Types.toColor filterType
+        , class "filter-description"
+        , class <| Types.toIdentifier filterType
+        ]
+        [ div [ class "filter-icon" ] [ Types.toIcon filterType ]
+        , text <| Types.toString filterType
+        ]
+    , div
+        [ class "filter-select"
+        , class <| Types.toIdentifier filterType
+        ]
+        [ case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypeRegistry) typeId ) of
             ( Just t, Nothing ) ->
                 text <| "Type " ++ fromInt t ++ " is not registered"
 
@@ -582,8 +586,25 @@ filterWidget selects filterType typeId =
                                 |> Select.menuItems (menuItemsForFilterType filterType)
                                 |> Select.placeholder "Add Filter +"
                                 |> Select.clearable True
+                                |> Select.setStyles
+                                    (SS.default
+                                        |> SS.setMenuStyles
+                                            (SS.getMenuConfig SS.default
+                                                -- |> SS.setMenuBackgroundColor (Css.hex "#09161B")
+                                                |> SS.setMenuBorderRadius 14
+                                            )
+                                        |> SS.setControlStyles
+                                            (SS.getControlConfig SS.default
+                                                |> SS.setControlBackgroundColor (Css.hex "#09161B")
+                                                |> SS.setControlBackgroundColorHover (Css.hex "#09161B")
+                                                |> SS.setControlColor (Css.hex "#E2BBDB")
+                                                |> SS.setControlSelectedColor (Css.hex "#E2BBDB")
+                                                |> SS.setControlBorderRadius 14
+                                            )
+                                    )
                             )
         ]
+    ]
 
 
 {-| The filter bar displayed ontop of the site, that lets users select their
@@ -594,33 +615,40 @@ filterBar mode selects filters =
     div
         [ id "filterbar"
         ]
-        [ filterWidget selects Types.Head filters.head
-        , filterWidget selects Types.UpperBody filters.upperBody
-        , filterWidget selects Types.LowerBody filters.lowerBody
-        , filterWidget selects Types.Accessories filters.accessories
-        , case mode of
-            Artwalk _ ->
-                a
-                    [ id "go-to-network-view"
-                    , class "filterbar-widget"
-                    -- TODO use correct paintingId here
-                    , href <| buildUrl (Relational { paintingId = 0 }) filters
-                    ]
-                    [ text "Go to Network View" ]
+        ([ div [ id "filter-sharpsign" ] [ text "#" ]
 
-            Relational _ ->
-                a
-                    [ id "go-to-artwalk-view"
-                    , class "filterbar-widget"
-                    , href <| buildUrl (Artwalk { position = 0 }) filters
+         -- TODO display actual history count
+         , div [ id "filter-historycount" ] [ text "1" ]
+         ]
+            ++ filterWidget selects Types.Head filters.head
+            ++ filterWidget selects Types.UpperBody filters.upperBody
+            ++ filterWidget selects Types.LowerBody filters.lowerBody
+            ++ filterWidget selects Types.Accessories filters.accessories
+            ++ [ case mode of
+                    Artwalk _ ->
+                        a
+                            [ id "go-to-network-view"
+                            , class "mode-button"
+
+                            -- TODO use correct paintingId here
+                            , href <| buildUrl (Relational { paintingId = 0 }) filters
+                            ]
+                            [ text "Go to Network View" ]
+
+                    Relational _ ->
+                        a
+                            [ id "go-to-artwalk-view"
+                            , class "mode-button"
+                            , href <| buildUrl (Artwalk { position = 0 }) filters
+                            ]
+                            [ text "Go to Artwalk View" ]
+               , a
+                    [ id "clear-all"
+                    , href <| buildUrl mode emptyFilters
                     ]
-                    [ text "Go to Artwalk View" ]
-        , a
-            [ id "clear-all"
-            , href <| buildUrl mode emptyFilters
-            ]
-            [ text "Clear all" ]
-        ]
+                    [ text "Clear all" ]
+               ]
+        )
 
 
 view model =
@@ -629,6 +657,7 @@ view model =
         [ div [ id "header" ]
             [ h1 [] [ text "The Artwalk of History" ]
             , div [ id "headerlinks" ]
+                -- TODO add link
                 [ div [ class "headerlink", class "refabold", class "gelb" ] [ text "The Collection" ]
 
                 -- TODO add link

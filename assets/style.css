@@ -72,7 +72,11 @@ hr {
 }
 
 #filterbar {
-  display: flex;
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1em 20em 20em 20em 20em 2em 22em 5em;
+  gap: 1em;
+  grid-auto-rows: 1em auto;
   flex-direction: row;
   border-top-color: #d4c263;
   border-top-style: solid;
@@ -85,8 +89,67 @@ hr {
   padding-left: 10em;
 }
 
-.filterbar-widget {
+#filter-sharpsign {
+  grid-row: 1;
+  grid-column: 1;
+  width: 1em;
+}
+
+#filter-historycount {
+  width: 1em;
+  text-align: center;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.filter-select {
+  font-weight: 700;
+}
+
+.filter-description {
+  grid-row: 1;
+  display: flex;
+}
+
+.filter-icon {
+  height: 1.5em;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.filter-select {
+  grid-row: 2;
+}
+
+.FilterHead {
+  grid-column: 2;
+}
+
+.FilterUpperBody {
+  grid-column: 3;
+}
+
+.FilterLowerBody {
+  grid-column: 4;
+}
+
+.FilterAccessories {
+  grid-column: 5;
+}
+
+.mode-button {
   border-radius: 12px;
+  text-align: center;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-row: 2;
+  grid-column: 7;
 }
 
 #go-to-network-view {
@@ -101,4 +164,12 @@ hr {
 
 #clear-all {
   color: #DB7070;
+  text-align: center;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-row: 2;
+  grid-column: 8;
 }
+
