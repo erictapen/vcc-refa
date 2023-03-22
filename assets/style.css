@@ -148,6 +148,7 @@ hr {
   display: flex;
   justify-content: center;
   align-items: center;
+  text-decoration: none;
   grid-row: 2;
   grid-column: 7;
 }
@@ -169,6 +170,7 @@ hr {
   display: flex;
   justify-content: center;
   align-items: center;
+  text-decoration: none;
   grid-row: 2;
   grid-column: 8;
 }
