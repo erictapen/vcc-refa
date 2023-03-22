@@ -1,4 +1,4 @@
-module FilterBar.View exposing (viewFilterBar)
+module FilterBar.View exposing (view)
 
 import Css
 import Dict exposing (Dict)
@@ -93,8 +93,8 @@ filterWidget selects filterType typeId =
 {-| The filter bar displayed ontop of the site, that lets users select their
 filters for each of the four filter categories.
 -}
-viewFilterBar : ArtwalkMode -> Dict String SelectElement -> Filters -> Html Msg
-viewFilterBar mode selects filters =
+view : ArtwalkMode -> Dict String SelectElement -> Filters -> Html Msg
+view mode selects filters =
     div
         [ id "filterbar"
         ]

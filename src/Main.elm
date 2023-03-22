@@ -436,7 +436,7 @@ view model =
                 , div [ class "headerlink", class "primary-grey" ] [ text "Contact" ]
                 ]
             ]
-        , FilterBar.View.viewFilterBar model.mode model.selects model.filters
+        , FilterBar.View.view model.mode model.selects model.filters
         ]
             ++ (case model.mode of
                     Artwalk _ ->
