@@ -1,20 +1,18 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
-import Constants exposing (baseUrlPath, refaBaseUrl)
-import Css
+import Constants exposing (refaBaseUrl)
 import Dict exposing (Dict)
 import FilterBar.Model
 import FilterBar.View
 import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (class, href, id, src, style)
-import Html.Styled
 import Http
 import List exposing (map)
-import Model exposing (..)
+import Model exposing (ArtwalkMode(..), Model, buildUrl, urlParser)
 import Msg exposing (Msg(..))
-import OmekaS as O exposing (..)
+import OmekaS exposing (HMO(..), Type(..), fetchHmoById, fetchTypeById)
 import Platform.Cmd
 import Platform.Sub
 import Select
@@ -22,8 +20,7 @@ import Set
 import String exposing (fromInt)
 import Types
 import Url
-import Url.Builder as UB
-import Url.Parser as UP exposing ((</>), (<?>))
+import Url.Parser as UP
 import Utils exposing (isNothing, removeNothings)
 
 
@@ -152,9 +149,11 @@ update msg model =
                 ( maybeAction, updatedSelectState, selectCmds ) =
                     Select.update selectMsg selectModel.selectState
 
+                oldFilters : FilterBar.Model.Filters
                 oldFilters =
                     model.filters
 
+                setFilter : Maybe Int -> FilterBar.Model.Filters
                 setFilter f =
                     case filterType of
                         Types.Head ->
@@ -169,6 +168,7 @@ update msg model =
                         Types.Accessories ->
                             { oldFilters | accessories = f }
 
+                newFilters : FilterBar.Model.Filters
                 newFilters =
                     case maybeAction of
                         Just (Select.Select filterId) ->
@@ -181,12 +181,13 @@ update msg model =
                         _ ->
                             model.filters
 
+                newModel : Model
                 newModel =
                     { model
                         | selects =
                             Dict.update (Types.toIdentifier filterType)
-                                (Maybe.andThen
-                                    (\oldSelect -> Just { oldSelect | selectState = updatedSelectState })
+                                (Maybe.map
+                                    (\oldSelect -> { oldSelect | selectState = updatedSelectState })
                                 )
                                 model.selects
                         , filters = newFilters
@@ -258,6 +259,7 @@ tagListItem paintingUrl typesCache typesId =
             Just (Type t) ->
                 [ details []
                     [ let
+                        refaUrl : String
                         refaUrl =
                             refaBaseUrl ++ fromInt typesId
                       in
@@ -298,7 +300,7 @@ artwalkView filters typesCache hmoCache =
 
             typeCacheMiss : Bool
             typeCacheMiss =
-                not <| List.foldr (&&) True <| map (not << isNothing) typeCacheResults
+                not <| List.all identity <| map (not << isNothing) typeCacheResults
           in
           if typeCacheMiss then
             -- We don't have every of the four possible filters in the type cache yet.
@@ -351,7 +353,7 @@ relationalTile paintingUrl maybeType maybeTypeId hmoCache filterType =
             ( _, Nothing ) ->
                 text "Loading.."
 
-            ( Just typeId, Just (Type tr) ) ->
+            ( Just _, Just (Type tr) ) ->
                 ul [] <| map (paintingItem paintingUrl) tr.reverseP67
         ]
 

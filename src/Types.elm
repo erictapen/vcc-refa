@@ -8,11 +8,9 @@ module Types exposing
     , toString
     )
 
-import Constants exposing (baseUrlPath)
 import Dict exposing (Dict)
-import Html exposing (Html, img)
-import Html.Attributes exposing (class, src, style, title)
-import Svg as S exposing (Svg, path, svg)
+import Html exposing (Html)
+import Svg exposing (path, svg)
 import Svg.Attributes as SA
 
 

@@ -22,7 +22,7 @@ menuItemsForFilterType filterType =
     map (\( typeId, ( _, label ) ) -> Select.basicMenuItem { item = typeId, label = label }) <|
         Dict.toList <|
             Dict.filter
-                (\k ( ft, _ ) -> ft == filterType)
+                (\_ ( ft, _ ) -> ft == filterType)
                 Types.filterTypeRegistry
 
 
@@ -30,10 +30,6 @@ menuItemsForFilterType filterType =
 -}
 filterWidget : Dict String SelectElement -> Types.FilterType -> Maybe Int -> List (Html Msg)
 filterWidget selects filterType typeId =
-    let
-        select =
-            Maybe.withDefault (emptySelect filterType) <| Dict.get (Types.toIdentifier filterType) selects
-    in
     [ span
         [ style "font-weight" "bold"
         , style "color" <| Types.toColor filterType
@@ -55,6 +51,10 @@ filterWidget selects filterType typeId =
             -- belongs to the right category. Maybe not important enough to
             -- check?
             ( _, registeredFilterType ) ->
+                let
+                    select =
+                        Maybe.withDefault (emptySelect filterType) <| Dict.get (Types.toIdentifier filterType) selects
+                in
                 Html.Styled.toUnstyled <|
                     Html.Styled.map (SelectMsg filterType) <|
                         Select.view

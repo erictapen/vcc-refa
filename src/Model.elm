@@ -1,16 +1,15 @@
-module Model exposing (ArtwalkMode(..), Model, buildUrl, queryParser, urlParser)
+module Model exposing (ArtwalkMode(..), Model, buildUrl, urlParser)
 
 import Browser.Navigation
-import Constants exposing (baseUrlPath, refaBaseUrl)
+import Constants exposing (baseUrlPath)
 import Dict exposing (Dict)
 import FilterBar.Model exposing (Filters, SelectElement)
 import OmekaS
-import Select
 import String exposing (fromInt)
 import Url.Builder as UB
 import Url.Parser as UP exposing ((</>), (<?>))
 import Url.Parser.Query as UQ
-import Utils exposing (isNothing, removeNothings)
+import Utils exposing (removeNothings)
 
 
 type alias Model =
@@ -32,6 +31,8 @@ type ArtwalkMode
         }
 
 
+{-| Parses the query part of the URL after the '?'.
+-}
 queryParser : UQ.Parser Filters
 queryParser =
     UQ.map4 Filters

@@ -1,7 +1,6 @@
 module OmekaS exposing
     ( HMO(..)
     , Type(..)
-    , e24HmoDecoder
     , fetchHmoById
     , fetchTypeById
     )

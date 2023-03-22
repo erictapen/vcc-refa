@@ -1,14 +1,15 @@
-module MainTest exposing (..)
+module MainTest exposing (suite)
 
 import Expect
+import FilterBar.Model exposing (Filters, emptyFilters)
 import List exposing (map)
 import Model exposing (ArtwalkMode(..), buildUrl, urlParser)
-import FilterBar.Model exposing (Filters, emptyFilters)
-import Test exposing (..)
+import Test exposing (Test, describe, test)
 import Url
 import Url.Parser
 
 
+baseUrl : String
 baseUrl =
     "https://erictapen.name"
 

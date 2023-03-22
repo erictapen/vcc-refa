@@ -1,4 +1,4 @@
-module FilterBar.Model exposing (..)
+module FilterBar.Model exposing (Filters, SelectElement, emptyFilters, emptySelect, getFilter)
 
 import Select
 import Types

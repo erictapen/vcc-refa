@@ -1,4 +1,4 @@
-module Utils exposing (..)
+module Utils exposing (isNothing, removeNothings)
 
 {-| A collection of utility functions.
 -}
