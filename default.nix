@@ -18,7 +18,7 @@ let
     stdenv.mkDerivation {
       inherit name src;
 
-      buildInputs = [ elmPackages.elm ]
+      buildInputs = with elmPackages; [ elm elm-test ]
         ++ lib.optional outputJavaScript nodePackages.uglify-js;
 
       buildPhase = pkgs.elmPackages.fetchElmDeps {
@@ -26,6 +26,9 @@ let
         elmVersion = "0.19.1";
         inherit registryDat;
       };
+
+      doCheck = true;
+      checkPhase = "elm-test";
 
       installPhase = let
         elmfile = module: "${srcdir}/${builtins.replaceStrings ["."] ["/"] module}.elm";
