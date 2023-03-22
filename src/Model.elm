@@ -1,4 +1,4 @@
-module Model exposing (ArtwalkMode(..), Model, buildUrl, urlParser)
+module Model exposing (ArtwalkMode(..), Model, buildUrl, buildUrlRelationalFromId, urlParser)
 
 import Browser.Navigation
 import Constants exposing (baseUrlPath)
@@ -74,3 +74,11 @@ buildUrl mode filters =
                     , Maybe.map (UB.int "accessories") filters.accessories
                     ]
            )
+
+
+{-| Variation of buildUrl for building an url with filters and the painting id
+to be displayed in relational mode.
+-}
+buildUrlRelationalFromId : FilterBar.Model.Filters -> Int -> String
+buildUrlRelationalFromId filters id =
+    buildUrl (Relational { paintingId = id }) filters

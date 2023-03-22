@@ -1,4 +1,4 @@
-module Constants exposing (refaBaseUrl, baseUrlPath)
+module Constants exposing (baseUrlPath, refaBaseUrl)
 
 {-| A collection of constants, that are used throughout the code.
 -}

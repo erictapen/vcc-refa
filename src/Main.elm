@@ -1,27 +1,25 @@
 module Main exposing (main)
 
+import Artwalk.View
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
-import Constants exposing (refaBaseUrl)
 import Dict exposing (Dict)
 import FilterBar.Model
 import FilterBar.View
-import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
-import Html.Attributes exposing (class, href, id, src, style)
+import Html exposing (div, h1, text)
+import Html.Attributes exposing (class, id)
 import Http
 import List exposing (map)
 import Model exposing (ArtwalkMode(..), Model, buildUrl, urlParser)
 import Msg exposing (Msg(..))
-import OmekaS exposing (HMO(..), Type(..), fetchHmoById, fetchTypeById)
+import OmekaS exposing (HMO(..), Type, fetchHmoById, fetchTypeById)
 import Platform.Cmd
 import Platform.Sub
+import Relational.View
 import Select
-import Set
-import String exposing (fromInt)
 import Types
 import Url
 import Url.Parser as UP
-import Utils exposing (isNothing, removeNothings)
 
 
 main =
@@ -65,14 +63,6 @@ init _ url key =
 
 subscriptions model =
     Sub.none
-
-
-{-| Variation of buildUrl for building an url with filters and the painting id
-to be displayed in relational mode.
--}
-buildUrlRelationalFromId : FilterBar.Model.Filters -> Int -> String
-buildUrlRelationalFromId filters id =
-    buildUrl (Relational { paintingId = id }) filters
 
 
 update : Msg -> Model -> ( Model, Platform.Cmd.Cmd Msg )
@@ -241,185 +231,6 @@ loadResources mode filters typesCache hmoCache =
                )
 
 
-paintingItem : (Int -> String) -> ( Int, String ) -> Html Msg
-paintingItem paintingUrl ( id, name ) =
-    li [] [ a [ href <| paintingUrl id ] [ text name ] ]
-
-
-{-| This list of tags is currently only shown for developing purposes.
-Eventually we are going to show only one tag.
--}
-tagListItem : (Int -> String) -> Dict Int Type -> Int -> Html Msg
-tagListItem paintingUrl typesCache typesId =
-    li [] <|
-        case Dict.get typesId typesCache of
-            Nothing ->
-                [ text "Loading..." ]
-
-            Just (Type t) ->
-                [ details []
-                    [ let
-                        refaUrl : String
-                        refaUrl =
-                            refaBaseUrl ++ fromInt typesId
-                      in
-                      summary []
-                        (Maybe.withDefault
-                            [ text <| fromInt typesId ++ ": "
-                            , a [ href <| refaUrl ] [ text t.label ]
-                            ]
-                         <|
-                            Maybe.map
-                                (\( fType, label ) ->
-                                    [ span [ style "font-weight" "bold" ]
-                                        [ text <| Types.toString fType ++ ": " ]
-                                    , a [ href <| refaUrl ] [ text label ]
-                                    ]
-                                )
-                                (Dict.get typesId Types.filterTypeRegistry)
-                        )
-                    , span [] [ ul [] <| map (paintingItem paintingUrl) t.reverseP67 ]
-                    ]
-                ]
-
-
-{-| The artwalk view.
--}
-artwalkView filters typesCache hmoCache =
-    div []
-        [ h1 [] [ text "Artwalk view" ]
-        , let
-            setFilters : List Int
-            setFilters =
-                removeNothings <|
-                    map (FilterBar.Model.getFilter filters) Types.allFilterTypes
-
-            typeCacheResults : List (Maybe Type)
-            typeCacheResults =
-                map (\t -> Dict.get t typesCache) setFilters
-
-            typeCacheMiss : Bool
-            typeCacheMiss =
-                not <| List.all identity <| map (not << isNothing) typeCacheResults
-          in
-          if typeCacheMiss then
-            -- We don't have every of the four possible filters in the type cache yet.
-            text "Loading"
-
-          else
-            case
-                Maybe.map Set.toList <|
-                    List.foldr
-                        (\(Type tr) maybeSet ->
-                            case maybeSet of
-                                Nothing ->
-                                    Just <| Set.fromList tr.reverseP67
-
-                                Just set ->
-                                    Just <| Set.intersect set <| Set.fromList tr.reverseP67
-                        )
-                        Nothing
-                    <|
-                        removeNothings typeCacheResults
-            of
-                Nothing ->
-                    text "Artwalk for no filters at all is not implemented yet. Please make a choice."
-
-                -- The intersection of all reverseP67's doesn't yield any results.
-                Just [] ->
-                    text "Zero results. Seems like your filters were to rigid. Try removing some!"
-
-                Just paintings ->
-                    ul [] <| map (paintingItem (buildUrlRelationalFromId filters)) paintings
-        ]
-
-
-{-| One of the four widgets that display pictures belonging to the selected category
--}
-relationalTile :
-    (Int -> String)
-    -> Maybe Type
-    -> Maybe Int
-    -> Dict Int (Result String HMO)
-    -> Types.FilterType
-    -> Html Msg
-relationalTile paintingUrl maybeType maybeTypeId hmoCache filterType =
-    div []
-        [ h2 [] [ text <| Types.toString filterType ]
-        , case ( maybeTypeId, maybeType ) of
-            ( Nothing, _ ) ->
-                text <| "Select a filter for " ++ Types.toString filterType ++ "."
-
-            ( _, Nothing ) ->
-                text "Loading.."
-
-            ( Just _, Just (Type tr) ) ->
-                ul [] <| map (paintingItem paintingUrl) tr.reverseP67
-        ]
-
-
-{-| The relational view
--}
-relationalView typesCache hmoCache paintingId filters =
-    div []
-        [ a
-            [ style "float" "right"
-            , href <| buildUrl (Artwalk { position = 0 }) filters
-            ]
-            [ text "Back to Artwalk" ]
-        , h1 [] [ text "Relational view" ]
-        , div []
-            [ p []
-                [ a [ href <| refaBaseUrl ++ fromInt paintingId ]
-                    [ text "Link to the ReFa web interface" ]
-                ]
-            , case Dict.get paintingId hmoCache of
-                Nothing ->
-                    text "Loading..."
-
-                Just (Err err) ->
-                    text err
-
-                Just (Ok (HMO hmoData)) ->
-                    case hmoData.thumbnailUrl of
-                        Nothing ->
-                            text "Kein Thumbnail!"
-
-                        Just thumbnailUrl ->
-                            div []
-                                [ img [ src thumbnailUrl ] []
-                                , div [] <|
-                                    map
-                                        (\ft ->
-                                            relationalTile
-                                                (buildUrlRelationalFromId filters)
-                                                (Maybe.andThen
-                                                    (\t -> Dict.get t typesCache)
-                                                    (FilterBar.Model.getFilter filters ft)
-                                                )
-                                                (FilterBar.Model.getFilter filters ft)
-                                                hmoCache
-                                                ft
-                                        )
-                                        Types.allFilterTypes
-                                , div []
-                                    [ h2 []
-                                        [ text "Debug view"
-                                        ]
-                                    , text "This view is for debugging purposes only and will eventually be removed"
-                                    , ul [] <|
-                                        map
-                                            (tagListItem
-                                                (buildUrlRelationalFromId filters)
-                                                typesCache
-                                            )
-                                            hmoData.p67refersTo
-                                    ]
-                                ]
-            ]
-        ]
-
-
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
@@ -440,14 +251,14 @@ view model =
         ]
             ++ (case model.mode of
                     Artwalk _ ->
-                        [ artwalkView
+                        [ Artwalk.View.view
                             model.filters
                             model.typesCache
                             model.hmoCache
                         ]
 
                     Relational r ->
-                        [ relationalView
+                        [ Relational.View.view
                             model.typesCache
                             model.hmoCache
                             r.paintingId
