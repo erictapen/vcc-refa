@@ -26,6 +26,7 @@
           elm-test
           elm-json
           elm2nix
+          elm-review
           (python3.withPackages (ps: with ps; [
             pandas
           ]))
