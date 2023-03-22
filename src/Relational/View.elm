@@ -73,7 +73,7 @@ view typesCache hmoCache paintingId filters =
                                             relationalTile
                                                 (buildUrlRelationalFromId filters)
                                                 (Maybe.andThen
-                                                    (\t -> Dict.get t typesCache)
+                                                    (\t -> Maybe.andThen Result.toMaybe <| Dict.get t typesCache)
                                                     (FilterBar.Model.getFilter filters ft)
                                                 )
                                                 (FilterBar.Model.getFilter filters ft)
@@ -102,14 +102,11 @@ view typesCache hmoCache paintingId filters =
 {-| This list of tags is currently only shown for developing purposes.
 Eventually we are going to show only one tag.
 -}
-tagListItem : (Int -> String) -> Dict Int Type -> Int -> Html Msg
+tagListItem : (Int -> String) -> Dict Int (Result String Type) -> Int -> Html Msg
 tagListItem paintingUrl typesCache typesId =
     li [] <|
         case Dict.get typesId typesCache of
-            Nothing ->
-                [ text "Loading..." ]
-
-            Just (Type t) ->
+            Just (Ok (Type t)) ->
                 [ details []
                     [ let
                         refaUrl : String
@@ -134,6 +131,9 @@ tagListItem paintingUrl typesCache typesId =
                     , span [] [ ul [] <| map (paintingItem paintingUrl) t.reverseP67 ]
                     ]
                 ]
+
+            _ ->
+                [ text "Loading..." ]
 
 
 paintingItem : (Int -> String) -> ( Int, String ) -> Html Msg

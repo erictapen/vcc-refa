@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Artwalk.Model
 import Artwalk.View
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation
@@ -20,6 +21,7 @@ import Select
 import Types
 import Url
 import Url.Parser as UP
+import Utils exposing (httpErrorToString)
 
 
 main =
@@ -83,20 +85,18 @@ update msg model =
 
                 Ok (HMO hmoRecord) ->
                     ( { model | hmoCache = Dict.insert paintingId (Ok (HMO hmoRecord)) model.hmoCache }
-                      -- TODO check wether we have it in cache before making the request
-                    , Cmd.batch <|
-                        map (\id -> fetchTypeById GotType id) hmoRecord.p67refersTo
+                    , Cmd.none
                     )
 
         GotType typeId typeResult ->
-            case typeResult of
-                Err _ ->
-                    ( model, Cmd.none )
-
-                Ok t ->
-                    ( { model | typesCache = Dict.insert typeId t model.typesCache }
-                    , Cmd.none
-                    )
+            ( { model
+                | typesCache =
+                    Dict.insert typeId
+                        (Result.mapError httpErrorToString typeResult)
+                        model.typesCache
+              }
+            , Cmd.none
+            )
 
         UrlChange urlRequest ->
             case urlRequest of
@@ -197,11 +197,11 @@ update msg model =
 the necessary GET requests so all the required data is in the cache. This
 also checks wether data is already in the caches before loading.
 -}
-loadResources : ArtwalkMode -> FilterBar.Model.Filters -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
+loadResources : ArtwalkMode -> FilterBar.Model.Filters -> Dict Int (Result String Type) -> Dict Int (Result String HMO) -> Cmd Msg
 loadResources mode filters typesCache hmoCache =
     Cmd.batch <|
-        -- In any case we check, wether all the filters are in the cache.
         map
+            -- In any case we check, wether all the filters are in the cache.
             (Maybe.withDefault Cmd.none
                 << Maybe.map
                     (\t ->
@@ -220,14 +220,26 @@ loadResources mode filters typesCache hmoCache =
             -- Stuff that we only need to fetch if we are in the correct mode for it.
             ++ (case mode of
                     Relational r ->
-                        if Dict.member r.paintingId hmoCache then
-                            [ Cmd.none ]
+                        case Dict.get r.paintingId hmoCache of
+                            Just (Ok (HMO hmo)) ->
+                                [ Cmd.batch <|
+                                    map (fetchTypeById GotType) <|
+                                        List.filter (\i -> not <| Dict.member i typesCache) <|
+                                            hmo.p67refersTo
+                                ]
 
-                        else
-                            [ fetchHmoById GotHMO r.paintingId ]
+                            Just (Err _) ->
+                                [ Cmd.none ]
+
+                            Nothing ->
+                                [ fetchHmoById GotHMO r.paintingId ]
 
                     Artwalk _ ->
-                        [ Cmd.none ]
+                        map (fetchHmoById GotHMO) <|
+                            List.filter (\id -> not <| Dict.member id hmoCache) <|
+                                map Tuple.first <|
+                                    Maybe.withDefault [] <|
+                                        Artwalk.Model.artwalkPaintings typesCache filters
                )
 
 

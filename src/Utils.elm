@@ -1,8 +1,9 @@
-module Utils exposing (isNothing, removeNothings)
+module Utils exposing (httpErrorToString, isNothing, removeNothings)
 
 {-| A collection of utility functions.
 -}
 
+import Http exposing (Error(..))
 import List
 
 
@@ -19,3 +20,16 @@ isNothing maybe =
 
         _ ->
             False
+
+
+httpErrorToString : Http.Error -> String
+httpErrorToString err =
+    case err of
+        BadBody str ->
+            "BadBody: " ++ str
+
+        BadUrl str ->
+            "BadUrl: " ++ str
+
+        _ ->
+            "Unknown HTTP error"

@@ -16,7 +16,7 @@ type alias Model =
     { mode : ArtwalkMode
     , filters : Filters
     , navigationKey : Browser.Navigation.Key
-    , typesCache : Dict Int OmekaS.Type
+    , typesCache : Dict Int (Result String OmekaS.Type)
     , hmoCache : Dict Int (Result String OmekaS.HMO)
     , selects : Dict String SelectElement
     }
