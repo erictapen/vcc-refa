@@ -82,7 +82,7 @@ toIdentifier ft =
             "FilterAccessories"
 
 
-toIcon : FilterType -> Html a
+toIcon : FilterType -> Html msg
 toIcon ft =
     svg
         [ SA.viewBox "0 0 700 700"

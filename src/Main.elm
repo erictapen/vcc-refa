@@ -5,23 +5,25 @@ import Browser.Navigation
 import Constants exposing (baseUrlPath, refaBaseUrl)
 import Css
 import Dict exposing (Dict)
+import FilterBar.Model
+import FilterBar.View
 import Html exposing (Html, a, details, div, h1, h2, img, li, p, span, summary, text, ul)
 import Html.Attributes exposing (class, href, id, src, style)
 import Html.Styled
 import Http
 import List exposing (map)
+import Model exposing (..)
+import Msg exposing (Msg(..))
 import OmekaS as O exposing (..)
 import Platform.Cmd
 import Platform.Sub
 import Select
-import Select.Styles as SS
 import Set
 import String exposing (fromInt)
 import Types
 import Url
 import Url.Builder as UB
 import Url.Parser as UP exposing ((</>), (<?>))
-import Url.Parser.Query as UQ
 import Utils exposing (isNothing, removeNothings)
 
 
@@ -36,95 +38,18 @@ main =
         }
 
 
-type alias SelectElement =
-    { selectState : Select.State
-    , selectedItem : Maybe Int
-    }
-
-
-type alias Model =
-    { mode : ArtwalkMode
-    , filters : Filters
-    , navigationKey : Browser.Navigation.Key
-    , typesCache : Dict Int Type
-    , hmoCache : Dict Int (Result String HMO)
-    , selects : Dict String SelectElement
-    }
-
-
-type ArtwalkMode
-    = Artwalk
-        { position : Int
-        }
-    | Relational
-        { paintingId : Int
-        }
-
-
-type alias Filters =
-    { head : Maybe Int
-    , upperBody : Maybe Int
-    , lowerBody : Maybe Int
-    , accessories : Maybe Int
-    }
-
-
-emptyFilters =
-    { head = Nothing
-    , upperBody = Nothing
-    , lowerBody = Nothing
-    , accessories = Nothing
-    }
-
-
-{-| A utility function to quickly get the correct filter from Filters.
--}
-getFilter : Filters -> Types.FilterType -> Maybe Int
-getFilter filters filterType =
-    case filterType of
-        Types.Head ->
-            filters.head
-
-        Types.UpperBody ->
-            filters.upperBody
-
-        Types.LowerBody ->
-            filters.lowerBody
-
-        Types.Accessories ->
-            filters.accessories
-
-
-queryParser : UQ.Parser Filters
-queryParser =
-    UQ.map4 Filters
-        (UQ.int "head")
-        (UQ.int "upperBody")
-        (UQ.int "lowerBody")
-        (UQ.int "accessories")
-
-
-urlParser : UP.Parser (( ArtwalkMode, Filters ) -> a) a
-urlParser =
-    UP.s "refa"
-        </> UP.oneOf
-                [ UP.map (\i f -> ( Relational { paintingId = i }, f )) (UP.int <?> queryParser)
-                , UP.map (\f -> ( Artwalk { position = 0 }, f )) (UP.top <?> queryParser)
-                ]
-
-
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd.Cmd Msg )
 init _ url key =
     let
         initialModel =
             { navigationKey = key
-            , filters = emptyFilters
+            , filters = FilterBar.Model.emptyFilters
             , mode = Artwalk { position = 0 }
             , typesCache = Dict.empty
             , hmoCache = Dict.empty
             , selects =
                 Dict.fromList <|
-                    map (\ft -> ( Types.toIdentifier ft, emptySelect ft ))
+                    map (\ft -> ( Types.toIdentifier ft, FilterBar.Model.emptySelect ft ))
                         Types.allFilterTypes
             }
 
@@ -141,52 +66,14 @@ init _ url key =
     )
 
 
-emptySelect filterType =
-    { selectState = Select.initState (Select.selectIdentifier <| Types.toIdentifier filterType)
-    , selectedItem = Nothing
-    }
-
-
-type Msg
-    = UrlChange UrlRequest
-    | GotHMO Int (Result Http.Error HMO)
-    | GotType Int (Result Http.Error Type)
-    | SelectMsg Types.FilterType (Select.Msg Int)
-
-
 subscriptions model =
     Sub.none
-
-
-{-| Build an URL from those components of the model, that are reflected in the URL.
-These components is everything besides the caches, as we want the whole
-application state to be reflected in the URL.
--}
-buildUrl : ArtwalkMode -> Filters -> String
-buildUrl mode filters =
-    baseUrlPath
-        ++ (UB.absolute
-                (case mode of
-                    Relational r ->
-                        [ fromInt r.paintingId ]
-
-                    _ ->
-                        []
-                )
-            <|
-                removeNothings
-                    [ Maybe.map (UB.int "head") filters.head
-                    , Maybe.map (UB.int "upperBody") filters.upperBody
-                    , Maybe.map (UB.int "lowerBody") filters.lowerBody
-                    , Maybe.map (UB.int "accessories") filters.accessories
-                    ]
-           )
 
 
 {-| Variation of buildUrl for building an url with filters and the painting id
 to be displayed in relational mode.
 -}
-buildUrlRelationalFromId : Filters -> Int -> String
+buildUrlRelationalFromId : FilterBar.Model.Filters -> Int -> String
 buildUrlRelationalFromId filters id =
     buildUrl (Relational { paintingId = id }) filters
 
@@ -259,7 +146,7 @@ update msg model =
         SelectMsg filterType selectMsg ->
             let
                 selectModel =
-                    Maybe.withDefault (emptySelect filterType) <|
+                    Maybe.withDefault (FilterBar.Model.emptySelect filterType) <|
                         Dict.get (Types.toIdentifier filterType) model.selects
 
                 ( maybeAction, updatedSelectState, selectCmds ) =
@@ -319,7 +206,7 @@ update msg model =
 the necessary GET requests so all the required data is in the cache. This
 also checks wether data is already in the caches before loading.
 -}
-loadResources : ArtwalkMode -> Filters -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
+loadResources : ArtwalkMode -> FilterBar.Model.Filters -> Dict Int Type -> Dict Int (Result String HMO) -> Cmd Msg
 loadResources mode filters typesCache hmoCache =
     Cmd.batch <|
         -- In any case we check, wether all the filters are in the cache.
@@ -403,7 +290,7 @@ artwalkView filters typesCache hmoCache =
             setFilters : List Int
             setFilters =
                 removeNothings <|
-                    map (getFilter filters) Types.allFilterTypes
+                    map (FilterBar.Model.getFilter filters) Types.allFilterTypes
 
             typeCacheResults : List (Maybe Type)
             typeCacheResults =
@@ -506,9 +393,9 @@ relationalView typesCache hmoCache paintingId filters =
                                                 (buildUrlRelationalFromId filters)
                                                 (Maybe.andThen
                                                     (\t -> Dict.get t typesCache)
-                                                    (getFilter filters ft)
+                                                    (FilterBar.Model.getFilter filters ft)
                                                 )
-                                                (getFilter filters ft)
+                                                (FilterBar.Model.getFilter filters ft)
                                                 hmoCache
                                                 ft
                                         )
@@ -531,126 +418,6 @@ relationalView typesCache hmoCache paintingId filters =
         ]
 
 
-{-| Get all the registered filtertypes as menuitems, for a given FilterType (e.g. Head)
--}
-menuItemsForFilterType : Types.FilterType -> List (Select.MenuItem Int)
-menuItemsForFilterType filterType =
-    map (\( typeId, ( _, label ) ) -> Select.basicMenuItem { item = typeId, label = label }) <|
-        Dict.toList <|
-            Dict.filter
-                (\k ( ft, _ ) -> ft == filterType)
-                Types.filterTypeRegistry
-
-
-{-| An individual filter widget, somewhat like a drop-down menu.
--}
-filterWidget : Dict String SelectElement -> Types.FilterType -> Maybe Int -> List (Html Msg)
-filterWidget selects filterType typeId =
-    let
-        select =
-            Maybe.withDefault (emptySelect filterType) <| Dict.get (Types.toIdentifier filterType) selects
-    in
-    [ span
-        [ style "font-weight" "bold"
-        , style "color" <| Types.toColor filterType
-        , class "filter-description"
-        , class <| Types.toIdentifier filterType
-        ]
-        [ div [ class "filter-icon" ] [ Types.toIcon filterType ]
-        , text <| Types.toString filterType
-        ]
-    , div
-        [ class "filter-select"
-        , class <| Types.toIdentifier filterType
-        ]
-        [ case ( typeId, Maybe.andThen (\t -> Dict.get t Types.filterTypeRegistry) typeId ) of
-            ( Just t, Nothing ) ->
-                text <| "Type " ++ fromInt t ++ " is not registered"
-
-            -- TODO: we never check, wether the typeId set via url actually
-            -- belongs to the right category. Maybe not important enough to
-            -- check?
-            ( _, registeredFilterType ) ->
-                Html.Styled.toUnstyled <|
-                    Html.Styled.map (SelectMsg filterType) <|
-                        Select.view
-                            (Select.single
-                                (case ( typeId, registeredFilterType ) of
-                                    ( Just t, Just ( _, humanReadableLabel ) ) ->
-                                        Just <| Select.basicMenuItem { item = t, label = humanReadableLabel }
-
-                                    _ ->
-                                        Nothing
-                                )
-                                |> Select.state select.selectState
-                                |> Select.menuItems (menuItemsForFilterType filterType)
-                                |> Select.placeholder "Add Filter +"
-                                |> Select.clearable True
-                                |> Select.setStyles
-                                    (SS.default
-                                        |> SS.setMenuStyles
-                                            (SS.getMenuConfig SS.default
-                                                -- |> SS.setMenuBackgroundColor (Css.hex "#09161B")
-                                                |> SS.setMenuBorderRadius 14
-                                            )
-                                        |> SS.setControlStyles
-                                            (SS.getControlConfig SS.default
-                                                |> SS.setControlBackgroundColor (Css.hex "#09161B")
-                                                |> SS.setControlBackgroundColorHover (Css.hex "#09161B")
-                                                |> SS.setControlColor (Css.hex "#E2BBDB")
-                                                |> SS.setControlSelectedColor (Css.hex "#E2BBDB")
-                                                |> SS.setControlBorderRadius 14
-                                            )
-                                    )
-                            )
-        ]
-    ]
-
-
-{-| The filter bar displayed ontop of the site, that lets users select their
-filters for each of the four filter categories.
--}
-filterBar : ArtwalkMode -> Dict String SelectElement -> Filters -> Html Msg
-filterBar mode selects filters =
-    div
-        [ id "filterbar"
-        ]
-        ([ div [ id "filter-sharpsign" ] [ text "#" ]
-
-         -- TODO display actual history count
-         , div [ id "filter-historycount" ] [ text "1" ]
-         ]
-            ++ filterWidget selects Types.Head filters.head
-            ++ filterWidget selects Types.UpperBody filters.upperBody
-            ++ filterWidget selects Types.LowerBody filters.lowerBody
-            ++ filterWidget selects Types.Accessories filters.accessories
-            ++ [ case mode of
-                    Artwalk _ ->
-                        a
-                            [ id "go-to-network-view"
-                            , class "mode-button"
-
-                            -- TODO use correct paintingId here
-                            , href <| buildUrl (Relational { paintingId = 0 }) filters
-                            ]
-                            [ text "Go to Network View" ]
-
-                    Relational _ ->
-                        a
-                            [ id "go-to-artwalk-view"
-                            , class "mode-button"
-                            , href <| buildUrl (Artwalk { position = 0 }) filters
-                            ]
-                            [ text "Go to Artwalk View" ]
-               , a
-                    [ id "clear-all"
-                    , href <| buildUrl mode emptyFilters
-                    ]
-                    [ text "Clear all" ]
-               ]
-        )
-
-
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
@@ -667,7 +434,7 @@ view model =
                 , div [ class "headerlink", class "primary-grey" ] [ text "Contact" ]
                 ]
             ]
-        , filterBar model.mode model.selects model.filters
+        , FilterBar.View.viewFilterBar model.mode model.selects model.filters
         ]
             ++ (case model.mode of
                     Artwalk _ ->
