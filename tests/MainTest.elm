@@ -2,36 +2,29 @@ module MainTest exposing (..)
 
 import Expect
 import List exposing (map)
-import Main exposing (ArtwalkMode(..), Filters, buildUrl, urlParser)
+import Model exposing (ArtwalkMode(..), buildUrl, urlParser)
+import FilterBar.Model exposing (Filters, emptyFilters)
 import Test exposing (..)
 import Url
 import Url.Parser
 
 
 baseUrl =
-    "https://erictapen.name/refa"
+    "https://erictapen.name"
 
 
 urlModelPairs : List ( String, String, ( ArtwalkMode, Filters ) )
 urlModelPairs =
     [ ( "simple artwalk"
-      , baseUrl ++ "/"
+      , baseUrl ++ "/refa/"
       , ( Artwalk { position = 0 }
-        , { head = Nothing
-          , upperBody = Nothing
-          , lowerBody = Nothing
-          , accessories = Nothing
-          }
+        , emptyFilters
         )
       )
     , ( "simple relational"
-      , baseUrl ++ "/127"
+      , baseUrl ++ "/refa/127"
       , ( Relational { paintingId = 127 }
-        , { head = Nothing
-          , upperBody = Nothing
-          , lowerBody = Nothing
-          , accessories = Nothing
-          }
+        , emptyFilters
         )
       )
     ]
