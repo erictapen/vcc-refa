@@ -14,6 +14,7 @@ import Msg exposing (Msg)
 import OmekaS exposing (HMO(..), Type(..))
 import Result
 import Set
+import String exposing (fromFloat)
 import Svg as S exposing (Svg, image, svg, text_)
 import Svg.Attributes as SA exposing (viewBox, xlinkHref)
 import Svg.Events as SA exposing (onClick)
@@ -21,6 +22,42 @@ import Tuple
 import Types
 import Url
 import Utils exposing (isNothing, removeNothings)
+
+
+painting : (Int -> String) -> Int -> Maybe (Result String HMO) -> Svg Msg
+painting paintingUrl index maybeHmo =
+    case maybeHmo of
+        Nothing ->
+            text_ [ SA.x "50", SA.y "50" ] [ S.text "loading..." ]
+
+        Just (Err e) ->
+            text_ [ SA.x "50", SA.y "50" ] [ S.text e ]
+
+        Just (Ok (HMO hmo)) ->
+            case hmo.thumbnailUrl of
+                Just url ->
+                    S.a
+                        [ xlinkHref <| paintingUrl hmo.id
+                        ]
+                        [ image
+                            [ xlinkHref url
+                            , SA.width "20"
+
+                            -- , SA.height "20"
+                            , SA.x "0"
+                            , SA.y "0"
+                            , SA.transform <|
+                                String.join " "
+                                    [ "scale(" ++ (fromFloat <| 1 / toFloat (index + 1)) ++ ") "
+                                    , "translate(50 10)"
+                                    , "translate(" ++ (fromFloat <| 40 * toFloat index) ++ " 0) "
+                                    ]
+                            ]
+                            []
+                        ]
+
+                Nothing ->
+                    text_ [] [ S.text "No thumbnail" ]
 
 
 artwalk : Dict Int (Result String OmekaS.HMO) -> (Int -> String) -> List ( Int, String ) -> Svg Msg
@@ -35,31 +72,12 @@ artwalk hmoCache paintingUrl paintings =
             , SA.width "100%"
             ]
             []
-        , case Dict.get (Maybe.withDefault 61 <| Maybe.map Tuple.first <| List.head paintings) hmoCache of
-            Nothing ->
-                text_ [ SA.x "50", SA.y "50" ] [ S.text "loading..." ]
-
-            Just (Err e) ->
-                text_ [ SA.x "50", SA.y "50" ] [ S.text e ]
-
-            Just (Ok (HMO hmo)) ->
-                case hmo.thumbnailUrl of
-                    Just url ->
-                        S.a [ xlinkHref <| paintingUrl hmo.id
-                            ]
-                            [ image
-                                [ xlinkHref url
-                                , SA.width "20"
-                                -- , SA.height "20"
-                                , SA.x "50%"
-                                , SA.y "10%"
-                                , SA.transform "translate(-10 0)"
-                                ]
-                                []
-                            ]
-
-                    Nothing ->
-                        text_ [] [ S.text "No thumbnail" ]
+        , S.g [] <|
+            List.reverse <|
+                List.indexedMap (painting paintingUrl) <|
+                    map (\i -> Dict.get i hmoCache) <|
+                        map Tuple.first <|
+                            List.take 10 paintings
         ]
 
 
