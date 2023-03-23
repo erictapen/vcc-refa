@@ -256,22 +256,23 @@ loadResources mode filters typesCache hmoCache =
 view model =
     { title = "Visualising Cultural Collections – Restaging Fashion"
     , body =
-        [ div [ id "header" ]
-            [ h1 [] [ text "The Artwalk of History" ]
-            , div [ id "headerlinks" ]
-                -- TODO add link
-                [ div [ class "headerlink", class "refabold", class "gelb" ] [ text "The Collection" ]
+        [ div [ id "app" ]
+            [ div [ id "header" ]
+                [ h1 [] [ text "The Artwalk of History" ]
+                , div [ id "headerlinks" ]
+                    -- TODO add link
+                    [ div [ class "headerlink", class "refabold", class "gelb" ] [ text "The Collection" ]
 
-                -- TODO add link
-                , div [ class "headerlink", class "primary-grey" ] [ text "About" ]
+                    -- TODO add link
+                    , div [ class "headerlink", class "primary-grey" ] [ text "About" ]
 
-                -- TODO add link
-                , div [ class "headerlink", class "primary-grey" ] [ text "Contact" ]
+                    -- TODO add link
+                    , div [ class "headerlink", class "primary-grey" ] [ text "Contact" ]
+                    ]
                 ]
-            ]
-        , FilterBar.View.view model.mode model.selects model.filters
-        ]
-            ++ (case model.mode of
+            , FilterBar.View.view model.mode model.selects model.filters
+            , div [ id "modeview" ]
+                (case model.mode of
                     Artwalk _ ->
                         [ Artwalk.View.view
                             model.filters
@@ -286,5 +287,7 @@ view model =
                             r.paintingId
                             model.filters
                         ]
-               )
+                )
+            ]
+        ]
     }

@@ -26,9 +26,15 @@ import Utils exposing (isNothing, removeNothings)
 artwalk : Dict Int (Result String OmekaS.HMO) -> (Int -> String) -> List ( Int, String ) -> Svg Msg
 artwalk hmoCache paintingUrl paintings =
     svg
-        [ viewBox "0 0 100 100"
+        [ id "artwalk-svg"
+        , viewBox "0 0 100 100"
         ]
-        [ image [ xlinkHref <| baseUrlPath ++ "/assets/background.png" ] []
+        [ image
+            [ xlinkHref <| baseUrlPath ++ "/assets/background.png"
+            , SA.y "-15%"
+            , SA.width "100%"
+            ]
+            []
         , case Dict.get (Maybe.withDefault 61 <| Maybe.map Tuple.first <| List.head paintings) hmoCache of
             Nothing ->
                 text_ [] [ S.text "loading..." ]
@@ -40,7 +46,12 @@ artwalk hmoCache paintingUrl paintings =
                 case hmo.thumbnailUrl of
                     Just url ->
                         S.a [ xlinkHref <| paintingUrl hmo.id ]
-                            [ image [ xlinkHref url ] []
+                            [ image
+                                [ xlinkHref url
+                                , SA.width "20"
+                                , SA.height "20"
+                                ]
+                                []
                             ]
 
                     Nothing ->
@@ -51,17 +62,15 @@ artwalk hmoCache paintingUrl paintings =
 {-| The artwalk view.
 -}
 view filters typesCache hmoCache =
-    div [ id "artwalk" ]
-        [ case
-            artwalkPaintings typesCache filters
-          of
-            Nothing ->
-                text "Loading"
+    case
+        artwalkPaintings typesCache filters
+    of
+        Nothing ->
+            text "Loading"
 
-            -- The intersection of all reverseP67's doesn't yield any results.
-            Just [] ->
-                text "Zero results. Seems like your filters were to rigid or you didn't select any filters (which isn't implemented yet)."
+        -- The intersection of all reverseP67's doesn't yield any results.
+        Just [] ->
+            text "Zero results. Seems like your filters were to rigid or you didn't select any filters (which isn't implemented yet)."
 
-            Just paintings ->
-                artwalk hmoCache (buildUrlRelationalFromId filters) paintings
-        ]
+        Just paintings ->
+            artwalk hmoCache (buildUrlRelationalFromId filters) paintings
