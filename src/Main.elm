@@ -158,18 +158,17 @@ update msg model =
                         Types.Accessories ->
                             { oldFilters | accessories = f }
 
-                newFilters : FilterBar.Model.Filters
-                newFilters =
+                ( filtersChanged, newFilters ) =
                     case maybeAction of
                         Just (Select.Select filterId) ->
-                            setFilter <| Just filterId
+                            ( True, setFilter <| Just filterId )
 
                         -- Is this even possible?
                         Just Select.Clear ->
-                            setFilter Nothing
+                            ( True, setFilter Nothing )
 
                         _ ->
-                            model.filters
+                            ( False, model.filters )
 
                 newModel : Model
                 newModel =
@@ -186,9 +185,17 @@ update msg model =
             ( newModel
             , Cmd.batch
                 [ Cmd.map (SelectMsg filterType) selectCmds
-                , Browser.Navigation.pushUrl model.navigationKey <|
-                    buildUrl newModel.mode newModel.filters
-                , loadResources newModel.mode newModel.filters newModel.typesCache newModel.hmoCache
+
+                -- Only do the other stuff when an element got actually selected (check maybeAction)
+                , if filtersChanged then
+                    Cmd.batch
+                        [ Browser.Navigation.pushUrl model.navigationKey <|
+                            buildUrl newModel.mode newModel.filters
+                        , loadResources newModel.mode newModel.filters newModel.typesCache newModel.hmoCache
+                        ]
+
+                  else
+                    Cmd.none
                 ]
             )
 
