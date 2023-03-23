@@ -89,13 +89,16 @@ update msg model =
                     )
 
         GotType typeId typeResult ->
-            ( { model
-                | typesCache =
+            let
+                newTypesCache =
                     Dict.insert typeId
                         (Result.mapError httpErrorToString typeResult)
                         model.typesCache
+            in
+            ( { model
+                | typesCache = newTypesCache
               }
-            , Cmd.none
+            , loadResources model.mode model.filters newTypesCache model.hmoCache
             )
 
         UrlChange urlRequest ->
@@ -186,7 +189,7 @@ update msg model =
             , Cmd.batch
                 [ Cmd.map (SelectMsg filterType) selectCmds
 
-                -- Only do the other stuff when an element got actually selected (check maybeAction)
+                -- Only do this when an element got actually selected (check maybeAction)
                 , if filtersChanged then
                     Cmd.batch
                         [ Browser.Navigation.pushUrl model.navigationKey <|
