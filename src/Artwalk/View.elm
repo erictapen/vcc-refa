@@ -1,6 +1,8 @@
 module Artwalk.View exposing (view)
 
 import Artwalk.Model exposing (artwalkPaintings)
+import Browser exposing (UrlRequest(..))
+import Constants exposing (baseUrlPath)
 import Dict exposing (Dict)
 import FilterBar.Model
 import Html exposing (Html, a, div, h1, li, text, ul)
@@ -13,16 +15,21 @@ import OmekaS exposing (HMO(..), Type(..))
 import Result
 import Set
 import Svg as S exposing (Svg, image, svg, text_)
-import Svg.Attributes as SA exposing (xlinkHref)
+import Svg.Attributes as SA exposing (viewBox, xlinkHref)
+import Svg.Events as SA exposing (onClick)
 import Tuple
 import Types
+import Url
 import Utils exposing (isNothing, removeNothings)
 
 
 artwalk : Dict Int (Result String OmekaS.HMO) -> (Int -> String) -> List ( Int, String ) -> Svg Msg
 artwalk hmoCache paintingUrl paintings =
-    svg []
-        [ case Dict.get (Maybe.withDefault 61 <| Maybe.map Tuple.first <| List.head paintings) hmoCache of
+    svg
+        [ viewBox "0 0 100 100"
+        ]
+        [ image [ xlinkHref <| baseUrlPath ++ "/assets/background.png" ] []
+        , case Dict.get (Maybe.withDefault 61 <| Maybe.map Tuple.first <| List.head paintings) hmoCache of
             Nothing ->
                 text_ [] [ S.text "loading..." ]
 
@@ -32,7 +39,9 @@ artwalk hmoCache paintingUrl paintings =
             Just (Ok (HMO hmo)) ->
                 case hmo.thumbnailUrl of
                     Just url ->
-                        image [ xlinkHref url ] []
+                        S.a [ xlinkHref <| paintingUrl hmo.id ]
+                            [ image [ xlinkHref url ] []
+                            ]
 
                     Nothing ->
                         text_ [] [ S.text "No thumbnail" ]
