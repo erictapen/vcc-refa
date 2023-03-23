@@ -37,19 +37,23 @@ artwalk hmoCache paintingUrl paintings =
             []
         , case Dict.get (Maybe.withDefault 61 <| Maybe.map Tuple.first <| List.head paintings) hmoCache of
             Nothing ->
-                text_ [] [ S.text "loading..." ]
+                text_ [ SA.x "50", SA.y "50" ] [ S.text "loading..." ]
 
             Just (Err e) ->
-                text_ [] [ S.text e ]
+                text_ [ SA.x "50", SA.y "50" ] [ S.text e ]
 
             Just (Ok (HMO hmo)) ->
                 case hmo.thumbnailUrl of
                     Just url ->
-                        S.a [ xlinkHref <| paintingUrl hmo.id ]
+                        S.a [ xlinkHref <| paintingUrl hmo.id
+                            ]
                             [ image
                                 [ xlinkHref url
                                 , SA.width "20"
-                                , SA.height "20"
+                                -- , SA.height "20"
+                                , SA.x "50%"
+                                , SA.y "10%"
+                                , SA.transform "translate(-10 0)"
                                 ]
                                 []
                             ]
