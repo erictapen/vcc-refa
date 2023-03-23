@@ -49,8 +49,7 @@ let
           ''}
         '') targets)}
         cp ${./index.html} $out/index.html
-        cp -r ${./assets}/style.css $out/assets/
-        cp -r ${./assets}/*.ttf $out/assets/
+        cp -r ${./assets}/style.css ${./assets}/*.ttf ${./assets}/*.png $out/assets/
         cp -r ${./assets}/icons $out/assets/icons
       '';
     };
