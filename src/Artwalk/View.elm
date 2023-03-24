@@ -33,8 +33,8 @@ painting globalAnimationFrame paintingUrl index maybeHmo =
         normalisedPaintingPosition =
             paintingTime / msPerPainting
     in
-    -- We only render if the painting hasn't reached the front of the runway yet.
-    if paintingTime < 0 then
+    -- We only render if the painting hasn't reached the front of the runway yet and if it isn't too far off.
+    if paintingTime < 0 || normalisedPaintingPosition > 10 then
         S.text ""
 
     else
@@ -98,7 +98,7 @@ artwalk hmoCache paintingUrl paintings position =
                 List.indexedMap (painting position paintingUrl) <|
                     map (\i -> Dict.get i hmoCache) <|
                         map Tuple.first <|
-                            List.take 10 paintings
+                            paintings
         ]
 
 
