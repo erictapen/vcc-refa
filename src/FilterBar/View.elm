@@ -114,7 +114,7 @@ view mode selects filters =
                             , class "mode-button"
 
                             -- TODO use correct paintingId here
-                            , href <| buildUrl (Relational { paintingId = 0 }) filters
+                            , href <| buildUrl (Relational { paintingId = 102 }) filters
                             ]
                             [ text "Go to Network View" ]
 
