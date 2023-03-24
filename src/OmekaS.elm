@@ -91,9 +91,11 @@ e24HmoDecoder =
                 (JD.map removeNothings (field "ecrm:P67_refers_to" (list oResourceDecoder)))
 
 
+{-| This used to be called "ecrm:E55\_Type", so we keep calling it a type, even though Concept is a much better name.
+-}
 e55TypeDecoder : JD.Decoder Type
 e55TypeDecoder =
-    checkForCorrectType "ecrm:E55_Type" <|
+    checkForCorrectType "skos:Concept" <|
         JD.map2 (\l r -> Type { label = l, reverseP67 = r })
             prefLabelDecoder
             reverseP67Decoder
