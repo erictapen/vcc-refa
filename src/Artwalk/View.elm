@@ -12,56 +12,60 @@ import Maybe
 import Model exposing (buildUrlRelationalFromId)
 import Msg exposing (Msg)
 import OmekaS exposing (HMO(..), Type(..))
-import Result
-import Set
 import String exposing (fromFloat)
 import Svg as S exposing (Svg, image, svg, text_)
 import Svg.Attributes as SA exposing (viewBox, xlinkHref)
 import Svg.Events as SA exposing (onClick)
 import Tuple
-import Types
-import Url
-import Utils exposing (isNothing, removeNothings)
 
 
-painting : (Int -> String) -> Int -> Maybe (Result String HMO) -> Svg Msg
-painting paintingUrl index maybeHmo =
-    case maybeHmo of
-        Nothing ->
-            text_ [ SA.x "50", SA.y "50" ] [ S.text "loading..." ]
+painting : Float -> (Int -> String) -> Int -> Maybe (Result String HMO) -> Svg Msg
+painting animationFrame paintingUrl index maybeHmo =
+    if animationFrame > 1000 * toFloat index then
+        S.text ""
 
-        Just (Err e) ->
-            text_ [ SA.x "50", SA.y "50" ] [ S.text e ]
+    else
+        case maybeHmo of
+            Nothing ->
+                text_ [ SA.x "50", SA.y "50" ] [ S.text "loading..." ]
 
-        Just (Ok (HMO hmo)) ->
-            case hmo.thumbnailUrl of
-                Just url ->
-                    S.a
-                        [ xlinkHref <| paintingUrl hmo.id
-                        ]
-                        [ image
-                            [ xlinkHref url
-                            , SA.width "20"
+            Just (Err e) ->
+                text_ [ SA.x "50", SA.y "50" ] [ S.text e ]
 
-                            -- , SA.height "20"
-                            , SA.x "0"
-                            , SA.y "0"
-                            , SA.transform <|
-                                String.join " "
-                                    [ "scale(" ++ (fromFloat <| 1 / toFloat (index + 1)) ++ ") "
-                                    , "translate(50 10)"
-                                    , "translate(" ++ (fromFloat <| 40 * toFloat index) ++ " 0) "
-                                    ]
+            Just (Ok (HMO hmo)) ->
+                case hmo.thumbnailUrl of
+                    Just url ->
+                        S.a
+                            [ xlinkHref <| paintingUrl hmo.id
                             ]
-                            []
-                        ]
+                            [ image
+                                [ xlinkHref url
+                                , SA.width "20"
 
-                Nothing ->
-                    text_ [] [ S.text "No thumbnail" ]
+                                -- , SA.height "20"
+                                , SA.x "0"
+                                , SA.y "0"
+                                , SA.transform <|
+                                    String.join " "
+                                        [ "scale(" ++ (fromFloat <| 1 / toFloat (index + 1)) ++ ") "
+                                        , "translate(50 10)"
+                                        , "translate(" ++ (fromFloat <| 40 * toFloat index) ++ " 0) "
+                                        ]
+                                ]
+                                []
+                            ]
+
+                    Nothing ->
+                        text_ [] [ S.text "No thumbnail" ]
 
 
-artwalk : Dict Int (Result String OmekaS.HMO) -> (Int -> String) -> List ( Int, String ) -> Svg Msg
-artwalk hmoCache paintingUrl paintings =
+artwalk :
+    Dict Int (Result String OmekaS.HMO)
+    -> (Int -> String)
+    -> List ( Int, String )
+    -> Float
+    -> Svg Msg
+artwalk hmoCache paintingUrl paintings position =
     svg
         [ id "artwalk-svg"
         , viewBox "0 0 100 100"
@@ -74,7 +78,7 @@ artwalk hmoCache paintingUrl paintings =
             []
         , S.g [] <|
             List.reverse <|
-                List.indexedMap (painting paintingUrl) <|
+                List.indexedMap (painting position paintingUrl) <|
                     map (\i -> Dict.get i hmoCache) <|
                         map Tuple.first <|
                             List.take 10 paintings
@@ -83,7 +87,7 @@ artwalk hmoCache paintingUrl paintings =
 
 {-| The artwalk view.
 -}
-view filters typesCache hmoCache =
+view filters typesCache hmoCache position =
     case
         artwalkPaintings typesCache filters
     of
@@ -95,4 +99,4 @@ view filters typesCache hmoCache =
             text "Zero results. Seems like your filters were to rigid or you didn't select any filters (which isn't implemented yet)."
 
         Just paintings ->
-            artwalk hmoCache (buildUrlRelationalFromId filters) paintings
+            artwalk hmoCache (buildUrlRelationalFromId filters) paintings position

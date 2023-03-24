@@ -3,6 +3,7 @@ module Main exposing (main)
 import Artwalk.Model
 import Artwalk.View
 import Browser exposing (UrlRequest(..))
+import Browser.Events
 import Browser.Navigation
 import Dict exposing (Dict)
 import FilterBar.Model
@@ -15,7 +16,6 @@ import Model exposing (ArtwalkMode(..), Model, buildUrl, urlParser)
 import Msg exposing (Msg(..))
 import OmekaS exposing (HMO(..), Type, fetchHmoById, fetchTypeById)
 import Platform.Cmd
-import Platform.Sub
 import Relational.View
 import Select
 import Types
@@ -63,8 +63,16 @@ init _ url key =
     )
 
 
+{-| If the mode is Artwalk and the caches are sufficiently warm, we subscribe
+to animationframes to render the Artwalk animation.
+-}
 subscriptions model =
-    Sub.none
+    case ( model.mode, Artwalk.Model.artwalkPaintings model.typesCache model.filters ) of
+        ( Artwalk _, Just _ ) ->
+            Browser.Events.onAnimationFrameDelta AnimationFrameDelta
+
+        _ ->
+            Sub.none
 
 
 update : Msg -> Model -> ( Model, Platform.Cmd.Cmd Msg )
@@ -202,6 +210,18 @@ update msg model =
                 ]
             )
 
+        AnimationFrameDelta delta ->
+            let
+                newMode =
+                    case model.mode of
+                        Artwalk aw ->
+                            Artwalk { aw | position = aw.position + delta }
+
+                        m ->
+                            m
+            in
+            ( { model | mode = newMode }, Cmd.none )
+
 
 {-| Whenever there is an update to a view, we use this one function to issue
 the necessary GET requests so all the required data is in the cache. This
@@ -273,11 +293,12 @@ view model =
             , FilterBar.View.view model.mode model.selects model.filters
             , div [ id "modeview" ]
                 (case model.mode of
-                    Artwalk _ ->
+                    Artwalk aw ->
                         [ Artwalk.View.view
                             model.filters
                             model.typesCache
                             model.hmoCache
+                            aw.position
                         ]
 
                     Relational r ->

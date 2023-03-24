@@ -12,3 +12,4 @@ type Msg
     | GotHMO Int (Result Http.Error OmekaS.HMO)
     | GotType Int (Result Http.Error OmekaS.Type)
     | SelectMsg Types.FilterType (Select.Msg Int)
+    | AnimationFrameDelta Float

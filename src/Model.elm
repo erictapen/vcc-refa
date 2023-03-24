@@ -24,7 +24,7 @@ type alias Model =
 
 type ArtwalkMode
     = Artwalk
-        { position : Int
+        { position : Float
         }
     | Relational
         { paintingId : Int

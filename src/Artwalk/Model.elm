@@ -1,7 +1,7 @@
 module Artwalk.Model exposing (artwalkPaintings)
 
-import Dict
-import FilterBar.Model
+import Dict exposing (Dict(..))
+import FilterBar.Model exposing (Filters)
 import List exposing (map)
 import OmekaS exposing (Type(..))
 import Result
@@ -12,7 +12,9 @@ import Utils exposing (isNothing, removeNothings)
 
 {-| TODO implement the case that there is no filter set
 We doen't actually have a model for Artwalk, this is just a function that derives one from the Filters set.
+Returns Nothing, if we have one ore more misses in the typecache.
 -}
+artwalkPaintings : Dict Int (Result String Type) -> Filters -> Maybe (List ( Int, String ))
 artwalkPaintings typesCache filters =
     let
         setFilters : List Int
