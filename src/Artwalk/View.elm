@@ -28,7 +28,7 @@ painting globalAnimationFrame paintingUrl index maybeHmo =
         -- The time, an individual painting is going to spend on the runway. If
         -- it is less than zero, it reached the front and vanishes.
         paintingTime =
-            (msPerPainting * toFloat index) - globalAnimationFrame
+            (msPerPainting * toFloat (index + 1)) - globalAnimationFrame
 
         normalisedPaintingPosition =
             paintingTime / msPerPainting
