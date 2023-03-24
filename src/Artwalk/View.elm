@@ -20,8 +20,21 @@ import Tuple
 
 
 painting : Float -> (Int -> String) -> Int -> Maybe (Result String HMO) -> Svg Msg
-painting animationFrame paintingUrl index maybeHmo =
-    if animationFrame > 1000 * toFloat index then
+painting globalAnimationFrame paintingUrl index maybeHmo =
+    let
+        msPerPainting =
+            8000
+
+        -- The time, an individual painting is going to spend on the runway. If
+        -- it is less than zero, it reached the front and vanishes.
+        paintingTime =
+            (msPerPainting * toFloat index) - globalAnimationFrame
+
+        normalisedPaintingPosition =
+            paintingTime / msPerPainting
+    in
+    -- We only render if the painting hasn't reached the front of the runway yet.
+    if paintingTime < 0 then
         S.text ""
 
     else
@@ -47,9 +60,13 @@ painting animationFrame paintingUrl index maybeHmo =
                                 , SA.y "0"
                                 , SA.transform <|
                                     String.join " "
-                                        [ "scale(" ++ (fromFloat <| 1 / toFloat (index + 1)) ++ ") "
+                                        [ "scale("
+                                            ++ (fromFloat <| 1 / (normalisedPaintingPosition + 1))
+                                            ++ ") "
                                         , "translate(50 10)"
-                                        , "translate(" ++ (fromFloat <| 40 * toFloat index) ++ " 0) "
+                                        , "translate("
+                                            ++ (fromFloat <| 40 * normalisedPaintingPosition)
+                                            ++ " 0) "
                                         ]
                                 ]
                                 []
