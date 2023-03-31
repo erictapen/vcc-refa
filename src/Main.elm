@@ -309,7 +309,7 @@ view model =
                             model.filters
                         ]
                 )
+            , a [ href "https://github.com/erictapen/vcc-refa" ] [ text "Source code" ]
             ]
-        , a [ href "https://github.com/erictapen/vcc-refa" ] [ text "Source code" ]
         ]
     }

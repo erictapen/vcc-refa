@@ -51,7 +51,6 @@ painting globalAnimationFrame paintingUrl index maybeHmo =
 
                             -- enable us to place the picture on its center
                             , style "transform" "translate(-50%, -50%)"
-
                             , style "position" "absolute"
                             , style "top" "200px"
                             , style "left" ((fromFloat <| 40 * normalisedPaintingPosition) ++ "%")

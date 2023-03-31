@@ -28,6 +28,12 @@ body {
   margin: 0;
 }
 
+#app {
+  height: 100vh;
+  display: flex;
+  flex-flow: column;
+}
+
 h1 {
   font-family: "DM Serif Display";
   font-size: 26px;
@@ -172,6 +178,10 @@ hr {
   text-decoration: none;
   grid-row: 2;
   grid-column: 8;
+}
+
+#modeview {
+  flex: 1;
 }
 
 #artwalk-canvas {
