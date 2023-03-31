@@ -8,8 +8,8 @@ import Browser.Navigation
 import Dict exposing (Dict)
 import FilterBar.Model
 import FilterBar.View
-import Html exposing (div, h1, text, a)
-import Html.Attributes exposing (class, id, href)
+import Html exposing (a, div, h1, text)
+import Html.Attributes exposing (class, href, id)
 import Http
 import List exposing (map)
 import Model exposing (ArtwalkMode(..), Model, buildUrl, urlParser)
@@ -310,6 +310,6 @@ view model =
                         ]
                 )
             ]
-          , a [ href "https://github.com/erictapen/vcc-refa" ] [ text "Source code" ]
+        , a [ href "https://github.com/erictapen/vcc-refa" ] [ text "Source code" ]
         ]
     }

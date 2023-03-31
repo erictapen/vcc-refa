@@ -5,21 +5,18 @@ import Browser exposing (UrlRequest(..))
 import Constants exposing (baseUrlPath)
 import Dict exposing (Dict)
 import FilterBar.Model
-import Html exposing (Html, a, div, h1, li, text, ul)
-import Html.Attributes exposing (href, id)
+import Html exposing (Html, a, div, h1, img, li, text, ul)
+import Html.Attributes exposing (class, href, id, src, style)
 import List exposing (map)
 import Maybe
 import Model exposing (buildUrlRelationalFromId)
 import Msg exposing (Msg)
 import OmekaS exposing (HMO(..), Type(..))
 import String exposing (fromFloat)
-import Svg as S exposing (Svg, image, svg, text_)
-import Svg.Attributes as SA exposing (viewBox, xlinkHref)
-import Svg.Events as SA exposing (onClick)
 import Tuple
 
 
-painting : Float -> (Int -> String) -> Int -> Maybe (Result String HMO) -> Svg Msg
+painting : Float -> (Int -> String) -> Int -> Maybe (Result String HMO) -> Html Msg
 painting globalAnimationFrame paintingUrl index maybeHmo =
     let
         msPerPainting =
@@ -35,45 +32,35 @@ painting globalAnimationFrame paintingUrl index maybeHmo =
     in
     -- We only render if the painting hasn't reached the front of the runway yet and if it isn't too far off.
     if paintingTime < 0 || normalisedPaintingPosition > 10 then
-        S.text ""
+        text ""
 
     else
         case maybeHmo of
             Nothing ->
-                text_ [ SA.x "50", SA.y "50" ] [ S.text "loading..." ]
+                div [] [ text "loading..." ]
 
             Just (Err e) ->
-                text_ [ SA.x "50", SA.y "50" ] [ S.text e ]
+                div [] [ text e ]
 
             Just (Ok (HMO hmo)) ->
                 case hmo.thumbnailUrl of
                     Just url ->
-                        S.a
-                            [ xlinkHref <| paintingUrl hmo.id
-                            ]
-                            [ image
-                                [ xlinkHref url
-                                , SA.width "20"
+                        a
+                            [ href <| paintingUrl hmo.id
+                            , class "artwalk-painting"
 
-                                -- , SA.height "20"
-                                , SA.x "0"
-                                , SA.y "0"
-                                , SA.transform <|
-                                    String.join " "
-                                        [ "scale("
-                                            ++ (fromFloat <| 1 / (normalisedPaintingPosition + 1))
-                                            ++ ") "
-                                        , "translate(50 10)"
-                                        , "translate("
-                                            ++ (fromFloat <| 40 * normalisedPaintingPosition)
-                                            ++ " 0) "
-                                        ]
-                                ]
-                                []
+                            -- enable us to place the picture on its center
+                            , style "transform" "translate(-50%, -50%)"
+
+                            , style "position" "absolute"
+                            , style "top" "200px"
+                            , style "left" ((fromFloat <| 40 * normalisedPaintingPosition) ++ "%")
+                            ]
+                            [ img [ src url ] []
                             ]
 
                     Nothing ->
-                        text_ [] [ S.text "No thumbnail" ]
+                        div [] [ text "No thumbnail" ]
 
 
 artwalk :
@@ -81,19 +68,16 @@ artwalk :
     -> (Int -> String)
     -> List ( Int, String )
     -> Float
-    -> Svg Msg
+    -> Html Msg
 artwalk hmoCache paintingUrl paintings position =
-    svg
-        [ id "artwalk-svg"
-        , viewBox "0 0 100 100"
+    div
+        [ id "artwalk-canvas"
         ]
-        [ image
-            [ xlinkHref <| baseUrlPath ++ "/assets/background.png"
-            , SA.y "-15%"
-            , SA.width "100%"
+        [ img
+            [ href <| baseUrlPath ++ "/assets/background.png"
             ]
             []
-        , S.g [] <|
+        , div [] <|
             List.reverse <|
                 List.indexedMap (painting position paintingUrl) <|
                     map (\i -> Dict.get i hmoCache) <|
